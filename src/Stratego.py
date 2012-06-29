@@ -8,15 +8,21 @@ Developed for the course "Game Programming" at the University of Amsterdam
 
 from Tkinter import *
 from math import sin, pi
-from Army import Army
+from Army import Army, Flag
 import tkMessageBox
+import webbrowser
 from constants import *
 from textwrap import fill, dedent
 
-class StrategoGUI:
+class Application:
     def __init__(self, root):
         self.root = root
         root.bind("<Escape>", self.exit)
+
+        # interaction vars
+        self.clickedUnit = None
+        self.placingUnit = False
+        self.movingUnit = False
 
         # Initialize armies
         self.blueArmy = Army()
@@ -105,7 +111,7 @@ class StrategoGUI:
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
 
     def visitWebsite(self):
-        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
+        webbrowser.open("http://code.google.com/p/gpfj")
 
     def about(self):
         text = """\
@@ -139,12 +145,13 @@ class StrategoGUI:
                 if self.isPool(x, y):
                     self.drawTile(x, y, WATER_COLOR)
 
-        # TODO: draw units on map
         for unit in self.redArmy.army:
-            pass
+            (x, y) = unit.getPosition()
+            self.drawUnit(self.map, unit, x, y, RED_PLAYER_COLOR)
 
         for unit in self.blueArmy.army:
-            pass
+            (x, y) = unit.getPosition()
+            self.drawUnit(self.map, unit, x, y, BLUE_PLAYER_COLOR)
 
     def drawTile(self, x, y, tileColor):
         """Fill a tile with its background color."""
@@ -163,9 +170,22 @@ class StrategoGUI:
                 x = unplacedRed % 10
                 y = unplacedRed / 10
                 unit.setPosition(self.offBoard(x), self.offBoard(y))
-                self.redUnitPanel.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
+                self.drawUnit(self.redUnitPanel, unit, x, y, RED_PLAYER_COLOR)
                 unplacedRed += 1
 
+        unplacedBlue = 0
+        for unit in self.blueArmy.army:
+            if unit.isOffBoard():
+                x = unplacedBlue % 10
+                y = unplacedBlue / 10
+                unit.setPosition(self.offBoard(x), self.offBoard(y))
+                unplacedBlue += 1
+
+    def drawUnit(self, canvas, unit, x, y, color):
+        canvas.create_rectangle(x * TILE_PIX, y * TILE_PIX + 1,
+                                (x + 1) * TILE_PIX + 1, (y + 1) * TILE_PIX + 1,
+                                fill=color, outline=None)
+        canvas.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
 
     def isPool(self, x, y):
         """Check whether there is a pool at tile (x,y)."""
@@ -190,9 +210,46 @@ class StrategoGUI:
         else:
             type = 'land'
 
-        unit = 'no unit'
+        # TODO: check for  existing units
+        if self.placingUnit:
+            if not self.isPool(x, y):
+                self.clickedUnit.setPosition(x, y)
+                self.setStatusBar("Placed %s" % self.clickedUnit)
+                self.placingUnit = False
+                self.clickedUnit = None
 
-        self.setStatusBar("You clicked (%s, %s); a %s tile with %s" % (x, y, type, unit))
+                self.drawSidePanels()
+                self.drawMap()
+
+        #TODO: handle attacks
+        #TODO: check for validity of move (adjacent tile, no friendly unit)
+        elif self.movingUnit:
+            if not(self.isPool(x, y)):
+                self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
+                self.clickedUnit.setPosition(x, y)
+                self.clickedUnit = None
+                self.movingUnit = False
+
+                self.drawMap()
+
+        else:
+            # find clicked unit
+            unit = self.redArmy.getUnit(x, y)
+            if not(unit):
+                unit = self.blueArmy.getUnit(x, y)
+                if unit:
+                    unit = "enemy unit at (%s, %s)" % (x, y)
+
+            if unit:
+                if unit.isMovable():
+                    self.movingUnit = True
+                    self.clickedUnit = unit
+                    self.drawUnit(self.map, unit, x, y, SELECTED_RED_PLAYER_COLOR)
+
+            else:
+                unit = "no unit at (%s, %s)" % (x, y)
+
+            self.setStatusBar("You clicked a %s tile with %s" % (type, unit))
 
     def panelClick(self, event):
         """Process mouse clicks on the side panel widget."""
@@ -212,22 +269,27 @@ class StrategoGUI:
             unit = army.getUnit(self.offBoard(x), self.offBoard(y))
             self.setStatusBar("You clicked on %s %s" % (panel, unit))
 
-            # TODO: unit placement
-            # 1. check whether unit is unplaced or dead
-            # 2. highlight unit and give help text in status bar
-            # 3. update map and panel when unit is placed
+            if panel == "red": # clicked player unit
+                self.clickedUnit = unit
+                self.placingUnit = True
+
+                # highlight unit
+                self.drawUnit(self.redUnitPanel, unit, x, y, SELECTED_RED_PLAYER_COLOR)
+
+                self.setStatusBar("Click the map to place this unit")
 
     def offBoard(self, x):
+        """Return negative coordinates used to indicate off-board position. Avoid zero."""
         return -x - 1
 
     def exit(self, event=None):
-        """Quits program."""
+        """Quit program."""
 
         self.root.quit()
 
 if __name__ == "__main__":
     root = Tk()
-    StrategoGUI(root)
-    root.title("Stratego %s" % VERSION)
-    #root.iconbitmap("icon") # TODO: window icon
+    Application(root)
+    root.title("%s %s" % (GAME_NAME, VERSION))
+    root.wm_iconbitmap("%s/flag.ico" % ICON_DIR) # TODO: window icon
     root.mainloop()

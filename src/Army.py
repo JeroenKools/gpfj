@@ -6,23 +6,26 @@ class Army:
     ranks = ['marshal', 'general', 'colonel', 'major', 'captain',
              'lieutenant', 'sergeant', 'miner', 'scout', 'spy', 'bomb', 'flag']
 
-    def __init__(self):
+    def __init__(self, armyType="classical"):
         """Represents a Stratego army as a list of Units."""
 
-        self.army = [
-                      Marshal(),
-                      General(),
-                      Colonel(), Colonel(),
-                      Major(), Major(), Major(),
-                      Captain(), Captain(), Captain(), Captain(),
-                      Lieutenant(), Lieutenant(), Lieutenant(), Lieutenant(),
-                      Sergeant(), Sergeant(), Sergeant(), Sergeant(),
-                      Miner(), Miner(), Miner(), Miner(), Miner(),
-                      Scout(), Scout(), Scout(), Scout(), Scout(), Scout(), Scout(), Scout(),
-                      Spy(),
-                      Bomb(), Bomb(), Bomb(), Bomb(), Bomb(), Bomb(),
-                      Flag()
-        ]
+        if armyType == "classical":
+            self.army = [
+                          Marshal(),
+                          General(),
+                          Colonel(), Colonel(),
+                          Major(), Major(), Major(),
+                          Captain(), Captain(), Captain(), Captain(),
+                          Lieutenant(), Lieutenant(), Lieutenant(), Lieutenant(),
+                          Sergeant(), Sergeant(), Sergeant(), Sergeant(),
+                          Miner(), Miner(), Miner(), Miner(), Miner(),
+                          Scout(), Scout(), Scout(), Scout(), Scout(), Scout(), Scout(), Scout(),
+                          Spy(),
+                          Bomb(), Bomb(), Bomb(), Bomb(), Bomb(), Bomb(),
+                          Flag()
+            ]
+        else:
+            pass # TODO: add other army options
 
     def getUnit(self, x, y):
         for unit in self.army:
@@ -32,20 +35,25 @@ class Army:
 class Unit:
     def __init__(self, position=None):
         self.position = position
-        self.alive = True
+        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+
         self.walkFar = False        # scout ability
-        self.killMarshall = False    # spy ability
+        self.killMarshall = False   # spy ability
+        self.canMove = True
+        self.alive = True
 
     def getPosition(self):
         return self.position
 
+    def setPosition(self, x, y):
+        self.position = (x, y)
+
     def isOffBoard(self):
         if self.position is None:
             return True
+        if self.position[0] < 0 and self.position[1] < 0:
+            return True
         else: return False
-
-    def setPosition(self, x, y):
-        self.position = (x, y)
 
     def die(self):
         self.alive = False
@@ -53,6 +61,9 @@ class Unit:
 
     def getIcon(self):
         return self.icon
+
+    def isMovable(self):
+        return self.canMove
 
     def __str__(self):
         if self.position:
@@ -62,98 +73,81 @@ class Unit:
 
 class Marshal(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.rank = 10
         self.name = "Marshal"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 10
+        Unit.__init__(self, position)
 
 class General(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.rank = 9
         self.name = "General"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 9
+        Unit.__init__(self, position)
 
 class Colonel(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.rank = 8
         self.name = "Colonel"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 8
+        Unit.__init__(self, position)
+
 
 class Major(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.rank = 7
         self.name = "Major"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 7
+        Unit.__init__(self, position)
 
 class Captain(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.rank = 6
         self.name = "Captain"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 6
+        Unit.__init__(self, position)
 
 class Lieutenant(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.rank = 5
         self.name = "Lieutenant"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 5
+        Unit.__init__(self, position)
 
 class Sergeant(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.rank = 4
         self.name = "Sergeant"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 4
+        Unit.__init__(self, position)
 
 class Miner(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.rank = 3
         self.name = "Miner"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 3
+        Unit.__init__(self, position)
 
 class Scout(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.moveFar = True # special scout ability!
-        self.rank = 2
         self.name = "Scout"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 2
+        Unit.__init__(self, position)
+
+        self.moveFar = True # special scout ability!
 
 class Spy(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = True
-        self.killMarshall = True
-        self.rank = 1
         self.name = "Spy"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 1
+        Unit.__init__(self, position)
+
+        self.killMarshall = True
 
 class Bomb(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = False
-        self.rank = 99
         self.name = "Bomb"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 99
+        Unit.__init__(self, position)
+
+        self.canMove = False
 
 class Flag(Unit):
     def __init__(self, position=None):
-        Unit.__init__(self, position)
-        self.moving = False
-        self.rank = 0
         self.name = "Flag"
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        self.rank = 0
+        Unit.__init__(self, position)
+
+        self.canMove = False
