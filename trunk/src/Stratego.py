@@ -6,27 +6,22 @@ Developed for the course "Game Programming" at the University of Amsterdam
 2012
 '''
 
-from Tkinter import *
-from math import sin, pi
-from Army import Army, Flag
-import tkMessageBox
-import webbrowser
+from Army import Army
 from constants import *
+import Brain, randomBrain
+
+from Tkinter import *
+import tkMessageBox
+from PIL import Image, ImageTk
+
+from math import sin, pi
+import webbrowser
 from textwrap import fill, dedent
+
 
 class Application:
     def __init__(self, root):
         self.root = root
-        root.bind("<Escape>", self.exit)
-
-        # interaction vars
-        self.clickedUnit = None
-        self.placingUnit = False
-        self.movingUnit = False
-
-        # Initialize armies
-        self.blueArmy = Army("classical", "Blue")
-        self.redArmy = Army("classical", "Red")
 
         # Create menu bar
         menuBar = Menu(root)
@@ -57,8 +52,8 @@ class Application:
         Button(toolbar, text="New", width=6, command=self.newGame).pack(side=LEFT, padx=2, pady=2)
         Button(toolbar, text="Load", width=6, command=self.loadGame).pack(side=LEFT, padx=2, pady=2)
         Button(toolbar, text="Save", width=6, command=self.saveGame).pack(side=LEFT, padx=2, pady=2)
-        Button(toolbar, text="Settings", width=6, command=self.newGame).pack(side=LEFT, padx=2, pady=2)
-        Button(toolbar, text="Stats", width=6, command=self.newGame).pack(side=LEFT, padx=2, pady=2)
+        Button(toolbar, text="Settings", width=6, command=self.settings).pack(side=LEFT, padx=2, pady=2)
+        Button(toolbar, text="Stats", width=6, command=self.statistics).pack(side=LEFT, padx=2, pady=2)
         toolbar.pack(side=TOP, fill=X)
 
         # Create status bar
@@ -77,7 +72,6 @@ class Application:
         self.redUnitPanel = Canvas(self.sidePanel, height=4 * TILE_PIX, width=10 * TILE_PIX)
         self.redUnitPanel.pack(side=BOTTOM)
 
-        self.drawSidePanels()
         self.sidePanel.pack(side=RIGHT, fill=Y)
         self.sidePanel.bind("<Button-1>", self.panelClick)
         for child in self.sidePanel.winfo_children():
@@ -89,12 +83,42 @@ class Application:
         self.mapFrame.pack(side=RIGHT, fill=BOTH, expand=1)
         self.map = Canvas(self.mapFrame, width=self.boardsize, height=self.boardsize)
         self.map.pack(side=RIGHT, fill=BOTH, expand=1)
+
+        # Key bindings
+        root.bind("<Escape>", self.exit)
         self.map.bind("<Button-1>", self.mapClick)
         self.root.bind("<Button-3>", self.rightClick)
-        self.drawMap()
+
+        self.braintypes = {"Blue": randomBrain,
+                           "Red": 0}
+        self.firstMove = "Red"
+
+        self.newGame()
 
     def newGame(self):
-        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
+        # TODO: lose ongoing game confirmation  
+
+        # interaction vars
+        self.clickedUnit = None
+        self.placingUnit = False
+        self.movingUnit = False
+        self.turn = self.firstMove
+        self.won = False
+
+        # Initialize armies and brains
+        self.blueArmy = Army("classical", "Blue")
+        self.redArmy = Army("classical", "Red")
+        self.brains = {"Blue": self.braintypes["Blue"].Brain(self.blueArmy) if self.braintypes["Blue"] else 0,
+                           "Red": self.braintypes["Red"].Brain(self.redArmy) if self.braintypes["Red"] else 0}
+
+        if self.brains["Blue"]:
+            self.brains["Blue"].placeArmy()
+
+        if self.brains["Red"]:
+            self.brains["Red"].placeArmy()
+
+        self.drawSidePanels()
+        self.drawMap()
 
     def loadGame(self):
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
@@ -147,12 +171,14 @@ class Application:
                     self.drawTile(x, y, WATER_COLOR)
 
         for unit in self.redArmy.army:
-            (x, y) = unit.getPosition()
-            self.drawUnit(self.map, unit, x, y, RED_PLAYER_COLOR)
+            if unit.alive:
+                (x, y) = unit.getPosition()
+                self.drawUnit(self.map, unit, x, y, RED_PLAYER_COLOR)
 
         for unit in self.blueArmy.army:
-            (x, y) = unit.getPosition()
-            self.drawUnit(self.map, unit, x, y, BLUE_PLAYER_COLOR)
+            if unit.alive:
+                (x, y) = unit.getPosition()
+                self.drawUnit(self.map, unit, x, y, BLUE_PLAYER_COLOR)
 
     def drawTile(self, x, y, tileColor):
         """Fill a tile with its background color."""
@@ -167,7 +193,7 @@ class Application:
 
         unplacedRed = 0
         for unit in self.redArmy.army:
-            if unit.isOffBoard():
+            if unit.isOffBoard() and unit.alive:
                 x = unplacedRed % 10
                 y = unplacedRed / 10
                 unit.setPosition(self.offBoard(x), self.offBoard(y))
@@ -183,10 +209,11 @@ class Application:
                 unplacedBlue += 1
 
     def drawUnit(self, canvas, unit, x, y, color):
-        canvas.create_rectangle(x * TILE_PIX, y * TILE_PIX + 1,
-                                (x + 1) * TILE_PIX + 1, (y + 1) * TILE_PIX + 1,
+        canvas.create_rectangle(x * TILE_PIX, y * TILE_PIX,
+                                (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
                                 fill=color, outline=None)
-        canvas.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
+        if unit.color == "Red" or DEBUG:
+            canvas.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
 
     def isPool(self, x, y):
         """Check whether there is a pool at tile (x,y)."""
@@ -199,7 +226,7 @@ class Application:
                 return True
             else:
                 return False
-            
+
     def rightClick(self, event):
         self.clickedUnit = None
         self.movingUnit = False
@@ -220,25 +247,24 @@ class Application:
 
         if self.placingUnit:
             self.placeUnit(x, y)
-            
-        #TODO: handle attacks
-        #TODO: check for validity of move (adjacent tile, no friendly unit)
-        elif self.movingUnit:
+
+        elif self.movingUnit and not self.won:
             self.moveUnit(x, y)
 
         else:
             # find clicked unit
-            unit = self.redArmy.getUnit(x, y)
-            if not(unit):
-                unit = self.blueArmy.getUnit(x, y)
-                if unit:
-                    unit = "enemy unit at (%s, %s)" % (x, y)
+            unit = self.getUnit(x, y)
 
             if unit:
-                if unit.isMovable():
-                    self.movingUnit = True
-                    self.clickedUnit = unit
-                    self.drawUnit(self.map, unit, x, y, SELECTED_RED_PLAYER_COLOR)
+                if unit.color == "Blue":
+                    self.setStatusBar("You clicked an enemy unit at (%s, %s)" % (x, y))
+                    return
+
+                else:
+                    if unit.isMovable():
+                        self.movingUnit = True
+                        self.clickedUnit = unit
+                        self.drawUnit(self.map, unit, x, y, SELECTED_RED_PLAYER_COLOR)
 
             else:
                 unit = "no unit at (%s, %s)" % (x, y)
@@ -249,11 +275,11 @@ class Application:
         if self.isPool(x, y):
             self.setStatusBar("You can't place units in the water!")
             return
-        
-        if self.redArmy.getUnit(x,y) or self.blueArmy.getUnit(x,y):
+
+        if self.redArmy.getUnit(x, y) or self.blueArmy.getUnit(x, y):
             self.setStatusBar("Can't place %s there, spot already taken!" % self.clickedUnit.name)
             return
-        
+
         self.clickedUnit.setPosition(x, y)
         self.setStatusBar("Placed %s" % self.clickedUnit)
         self.placingUnit = False
@@ -261,72 +287,125 @@ class Application:
 
         self.drawSidePanels()
         self.drawMap()
-        
+
     def moveUnit(self, x, y):
-        if not self.legalMove(x, y):
-            self.setStatusBar("You can't move there, that tile is out of range")
+        if not self.legalMove(self.clickedUnit, x, y):
+            self.setStatusBar("You can't move there!")
             return
-        
-        if self.isPool(x, y):
-            self.setStatusBar("You can't move into the water!")
-            return
-        
+
         target = self.getUnit(x, y)
         if target:
             if target.color == self.clickedUnit.color:
                 self.setStatusBar("You can't move there - tile already occupied!")
-                return
             else:
                 self.attack(self.clickedUnit, target)
-                return
-        
-        self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
-        self.clickedUnit.setPosition(x, y)
+
+        else:
+            self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
+            self.clickedUnit.setPosition(x, y)
+
         self.clickedUnit = None
         self.movingUnit = False
 
         self.drawMap()
-        
-    def legalMove(self, x, y):
+
+        self.endTurn()
+
+    def endTurn(self):
+        self.turn = "Blue" if self.turn == "Red" else "Blue"
+
+        if self.brains[self.turn] and not self.won: # computer player?
+            (oldlocation, move) = self.brains[self.turn].doMove(self)
+            self.setStatusBar("%s moves unit at %s to %s" % (self.turn, oldlocation, move))
+
+            self.drawMap()
+            self.drawSidePanels()
+
+        self.turn = "Blue" if self.turn == "Red" else "Blue"
+
+    def legalMove(self, unit, x, y):
         """Check whether a move:
+            - does not end in the water
             - is only in one direction
             - is not farther than one step, for non-scouts
             - does not jump over obstacles, for scouts
         """
-        
-        (ux, uy) = self.clickedUnit.position
-        dx = abs(ux-x)
-        dy = abs(uy-y)
-            
-        if self.clickedUnit.walkFar:
+
+        if self.isPool(x, y):
+            return False
+
+        (ux, uy) = unit.position
+        dx = abs(ux - x)
+        dy = abs(uy - y)
+
+        if unit.walkFar:
             if ux != x and uy != y:
                 return False
-            
+
             if uy == y:
-                x0 = min(x,ux)
-                x1 = max(x,ux)
-                for i in range(x0+1, x1):
+                x0 = min(x, ux)
+                x1 = max(x, ux)
+                for i in range(x0 + 1, x1):
                     if self.isPool(i, y) or self.getUnit(i, y):
                         return False
-                    
+
             elif ux == x:
-                y0 = min(y,uy)
-                y1 = max(y,uy)
-                for i in range(y0+1, y1):
+                y0 = min(y, uy)
+                y1 = max(y, uy)
+                for i in range(y0 + 1, y1):
                     if self.isPool(x, i) or self.getUnit(x, i):
                         return False
-        
-        else: 
-            if (dx+dy) != 1:
+
+        else:
+            if (dx + dy) != 1:
                 return False
-        
+
         return True
-        
+
     def attack(self, attacker, defender):
-        pass # TODO: attack
-        
+
+        text = "A %s %s attacked a %s %s. " % (attacker.color, attacker.name, defender.color, defender.name)
+
+        if defender.name == "Flag":
+            attacker.position = defender.position
+            defender.die()
+            self.victory(attacker.color)
+
+        elif attacker.canDefuseBomb and defender.name == "Bomb":
+            attacker.position = defender.position
+            defender.die()
+            text += "The mine was disabled."
+
+        elif attacker.canKillMarshal and defender.name == "Marshal":
+            attacker.position = defender.position
+            defender.die()
+            text += "The marshal has been assassinated."
+
+        elif attacker.rank > defender.rank:
+            attacker.position = defender.position
+            defender.die()
+            text += "The %s was defeated." % defender.name
+
+        elif attacker.rank == defender.rank:
+            attacker.die()
+            defender.die()
+            text += "Both units died."
+
+        else:
+            attacker.die()
+            text += "The %s was defeated." % attacker.name
+
+        if not self.won:
+            text = fill(dedent(text), 60)
+            tkMessageBox.showinfo("Battle result", text)
+
+        self.drawMap()
+        self.drawSidePanels()
+        self.clickedUnit = None
+        self.movingUnit = False
+
     def getUnit(self, x, y):
-        return self.redArmy.getUnit(x,y) or self.blueArmy.getUnit(x,y)
+        return self.redArmy.getUnit(x, y) or self.blueArmy.getUnit(x, y)
 
     def panelClick(self, event):
         """Process mouse clicks on the side panel widget."""
@@ -346,19 +425,44 @@ class Application:
             unit = army.getUnit(self.offBoard(x), self.offBoard(y))
             if unit:
                 self.setStatusBar("You clicked on %s %s" % (panel, unit))
-    
+
                 if panel == "red": # clicked player unit
                     self.clickedUnit = unit
                     self.placingUnit = True
-    
+
                     # highlight unit
                     self.drawUnit(self.redUnitPanel, unit, x, y, SELECTED_RED_PLAYER_COLOR)
-    
+
                     self.setStatusBar("Click the map to place this unit")
 
     def offBoard(self, x):
         """Return negative coordinates used to indicate off-board position. Avoid zero."""
         return -x - 1
+
+    def victory(self, color):
+        self.won = True
+        top = Toplevel(width=300)
+        flagimg1 = Image.open("%s/%s.%s" % (ICON_DIR, "flag", ICON_TYPE))
+        flagimg2 = ImageTk.PhotoImage(flagimg1)
+        lbl = Label(top, image=flagimg2)
+        lbl.image = flagimg2
+        lbl.grid(row=0, column=1, sticky=NW)
+
+        if color == "Red":
+            top.title("Victory!")
+            message = Label(top, text="Congratulations! You've captured the enemy flag!")
+
+        else:
+            top.title("Defeat!")
+            message = Label(top, text="Unfortunately, the enemy has captured your flag. You lose.")
+
+        message.grid(row=0, column=0, sticky=NE, ipadx=15, ipady=50)
+
+        ok = Button(top, text="OK", command=top.destroy)
+        ok.grid(row=1, column=0, columnspan=2, ipadx=15, ipady=5, pady=5)
+
+        message.configure(width=40, justify=CENTER, wraplength=150)
+        self.setStatusBar("%s has won the game!" % color)
 
     def exit(self, event=None):
         """Quit program."""
@@ -369,5 +473,5 @@ if __name__ == "__main__":
     root = Tk()
     Application(root)
     root.title("%s %s" % (GAME_NAME, VERSION))
-    root.wm_iconbitmap("%s/flag.ico" % ICON_DIR) # TODO: window icon
+    root.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
     root.mainloop()

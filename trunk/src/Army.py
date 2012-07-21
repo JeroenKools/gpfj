@@ -1,14 +1,15 @@
 from constants import *
 from Tkinter import PhotoImage
+from PIL import Image, ImageTk
 
 
 class Army:
     ranks = ['marshal', 'general', 'colonel', 'major', 'captain',
-             'lieutenant', 'sergeant', 'miner', 'scout', 'spy', 'bomb', 'flag']
+             'lieutenant', 'sergeant', 'canDefuseBomb', 'scout', 'spy', 'bomb', 'flag']
 
     def __init__(self, armyType="classical", color="Red"):
         """Represents a Stratego army as a list of Units."""
-        
+
         self.armyType = armyType
         self.color = color
 
@@ -29,7 +30,7 @@ class Army:
             ]
         else:
             pass # TODO: add other army options
-        
+
         for unit in self.army:
             unit.color = self.color
 
@@ -41,10 +42,15 @@ class Army:
 class Unit:
     def __init__(self, position=None):
         self.position = position
-        self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        icon = Image.open("%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        #self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        icon = icon.resize((2 * TILE_PIX, 2 * TILE_PIX), Image.BICUBIC)
+        icon = icon.resize((TILE_PIX, TILE_PIX), Image.ANTIALIAS)
+        self.icon = ImageTk.PhotoImage(icon)
 
         self.walkFar = False        # scout ability
-        self.killMarshall = False   # spy ability
+        self.canKillMarshal = False   # spy ability
+        self.canDefuseBomb = False          # canDefuseBomb ability
         self.canMove = True
         self.alive = True
 
@@ -75,7 +81,7 @@ class Unit:
         if self.position:
             return "%s at %s" % (self.name, self.position)
         else:
-            return "Off-board %s" % (self.type)
+            return "Off-board %s" % (self.name)
 
 class Marshal(Unit):
     def __init__(self, position=None):
@@ -126,6 +132,8 @@ class Miner(Unit):
         self.rank = 3
         Unit.__init__(self, position)
 
+        self.canDefuseBomb = True
+
 class Scout(Unit):
     def __init__(self, position=None):
         self.name = "Scout"
@@ -140,7 +148,7 @@ class Spy(Unit):
         self.rank = 1
         Unit.__init__(self, position)
 
-        self.killMarshall = True
+        self.canKillMarshal = True
 
 class Bomb(Unit):
     def __init__(self, position=None):
