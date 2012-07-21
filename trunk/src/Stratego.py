@@ -25,8 +25,8 @@ class Application:
         self.movingUnit = False
 
         # Initialize armies
-        self.blueArmy = Army()
-        self.redArmy = Army()
+        self.blueArmy = Army("classical", "Blue")
+        self.redArmy = Army("classical", "Red")
 
         # Create menu bar
         menuBar = Menu(root)
@@ -90,6 +90,7 @@ class Application:
         self.map = Canvas(self.mapFrame, width=self.boardsize, height=self.boardsize)
         self.map.pack(side=RIGHT, fill=BOTH, expand=1)
         self.map.bind("<Button-1>", self.mapClick)
+        self.root.bind("<Button-3>", self.rightClick)
         self.drawMap()
 
     def newGame(self):
@@ -198,6 +199,13 @@ class Application:
                 return True
             else:
                 return False
+            
+    def rightClick(self, event):
+        self.clickedUnit = None
+        self.movingUnit = False
+        self.drawMap()
+        self.drawSidePanels()
+        self.setStatusBar("")
 
     def mapClick(self, event):
         """Process clicks on the map widget."""
@@ -210,27 +218,13 @@ class Application:
         else:
             type = 'land'
 
-        # TODO: check for  existing units
         if self.placingUnit:
-            if not self.isPool(x, y):
-                self.clickedUnit.setPosition(x, y)
-                self.setStatusBar("Placed %s" % self.clickedUnit)
-                self.placingUnit = False
-                self.clickedUnit = None
-
-                self.drawSidePanels()
-                self.drawMap()
-
+            self.placeUnit(x, y)
+            
         #TODO: handle attacks
         #TODO: check for validity of move (adjacent tile, no friendly unit)
         elif self.movingUnit:
-            if not(self.isPool(x, y)):
-                self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
-                self.clickedUnit.setPosition(x, y)
-                self.clickedUnit = None
-                self.movingUnit = False
-
-                self.drawMap()
+            self.moveUnit(x, y)
 
         else:
             # find clicked unit
@@ -251,6 +245,89 @@ class Application:
 
             self.setStatusBar("You clicked a %s tile with %s" % (type, unit))
 
+    def placeUnit(self, x, y):
+        if self.isPool(x, y):
+            self.setStatusBar("You can't place units in the water!")
+            return
+        
+        if self.redArmy.getUnit(x,y) or self.blueArmy.getUnit(x,y):
+            self.setStatusBar("Can't place %s there, spot already taken!" % self.clickedUnit.name)
+            return
+        
+        self.clickedUnit.setPosition(x, y)
+        self.setStatusBar("Placed %s" % self.clickedUnit)
+        self.placingUnit = False
+        self.clickedUnit = None
+
+        self.drawSidePanels()
+        self.drawMap()
+        
+    def moveUnit(self, x, y):
+        if not self.legalMove(x, y):
+            self.setStatusBar("You can't move there, that tile is out of range")
+            return
+        
+        if self.isPool(x, y):
+            self.setStatusBar("You can't move into the water!")
+            return
+        
+        target = self.getUnit(x, y)
+        if target:
+            if target.color == self.clickedUnit.color:
+                self.setStatusBar("You can't move there - tile already occupied!")
+                return
+            else:
+                self.attack(self.clickedUnit, target)
+                return
+        
+        self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
+        self.clickedUnit.setPosition(x, y)
+        self.clickedUnit = None
+        self.movingUnit = False
+
+        self.drawMap()
+        
+    def legalMove(self, x, y):
+        """Check whether a move:
+            - is only in one direction
+            - is not farther than one step, for non-scouts
+            - does not jump over obstacles, for scouts
+        """
+        
+        (ux, uy) = self.clickedUnit.position
+        dx = abs(ux-x)
+        dy = abs(uy-y)
+            
+        if self.clickedUnit.walkFar:
+            if ux != x and uy != y:
+                return False
+            
+            if uy == y:
+                x0 = min(x,ux)
+                x1 = max(x,ux)
+                for i in range(x0+1, x1):
+                    if self.isPool(i, y) or self.getUnit(i, y):
+                        return False
+                    
+            elif ux == x:
+                y0 = min(y,uy)
+                y1 = max(y,uy)
+                for i in range(y0+1, y1):
+                    if self.isPool(x, i) or self.getUnit(x, i):
+                        return False
+        
+        else: 
+            if (dx+dy) != 1:
+                return False
+        
+        return True
+        
+    def attack(self, attacker, defender):
+        pass # TODO: attack
+        
+    def getUnit(self, x, y):
+        return self.redArmy.getUnit(x,y) or self.blueArmy.getUnit(x,y)
+
     def panelClick(self, event):
         """Process mouse clicks on the side panel widget."""
         x = event.x / TILE_PIX
@@ -267,16 +344,17 @@ class Application:
 
         if panel:
             unit = army.getUnit(self.offBoard(x), self.offBoard(y))
-            self.setStatusBar("You clicked on %s %s" % (panel, unit))
-
-            if panel == "red": # clicked player unit
-                self.clickedUnit = unit
-                self.placingUnit = True
-
-                # highlight unit
-                self.drawUnit(self.redUnitPanel, unit, x, y, SELECTED_RED_PLAYER_COLOR)
-
-                self.setStatusBar("Click the map to place this unit")
+            if unit:
+                self.setStatusBar("You clicked on %s %s" % (panel, unit))
+    
+                if panel == "red": # clicked player unit
+                    self.clickedUnit = unit
+                    self.placingUnit = True
+    
+                    # highlight unit
+                    self.drawUnit(self.redUnitPanel, unit, x, y, SELECTED_RED_PLAYER_COLOR)
+    
+                    self.setStatusBar("Click the map to place this unit")
 
     def offBoard(self, x):
         """Return negative coordinates used to indicate off-board position. Avoid zero."""

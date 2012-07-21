@@ -6,8 +6,11 @@ class Army:
     ranks = ['marshal', 'general', 'colonel', 'major', 'captain',
              'lieutenant', 'sergeant', 'miner', 'scout', 'spy', 'bomb', 'flag']
 
-    def __init__(self, armyType="classical"):
+    def __init__(self, armyType="classical", color="Red"):
         """Represents a Stratego army as a list of Units."""
+        
+        self.armyType = armyType
+        self.color = color
 
         if armyType == "classical":
             self.army = [
@@ -26,6 +29,9 @@ class Army:
             ]
         else:
             pass # TODO: add other army options
+        
+        for unit in self.army:
+            unit.color = self.color
 
     def getUnit(self, x, y):
         for unit in self.army:
@@ -126,7 +132,7 @@ class Scout(Unit):
         self.rank = 2
         Unit.__init__(self, position)
 
-        self.moveFar = True # special scout ability!
+        self.walkFar = True # special scout ability!
 
 class Spy(Unit):
     def __init__(self, position=None):
