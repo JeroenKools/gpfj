@@ -6,7 +6,7 @@ Created on 28 jun. 2012
 '''
 
 GAME_NAME = 'Stratego'      # Kindral? Praetor?
-VERSION = 0.34              # Game version
+VERSION = 0.35              # Game version
 
 ICON_DIR = 'uniticons'
 ICON_TYPE = 'png'
