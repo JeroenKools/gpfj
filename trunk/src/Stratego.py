@@ -79,6 +79,9 @@ class Application:
 
         # Create map 
         self.boardsize = BOARD_WIDTH * TILE_PIX
+        grassImage = Image.open("terrain/grass.jpg")
+        grassImage = grassImage.resize((BOARD_WIDTH * TILE_PIX, BOARD_WIDTH * TILE_PIX), Image.BICUBIC)
+        self.grassImage = ImageTk.PhotoImage(grassImage)
         self.mapFrame = Frame(root, relief=SUNKEN, bd=2)
         self.mapFrame.pack(side=RIGHT, fill=BOTH, expand=1)
         self.map = Canvas(self.mapFrame, width=self.boardsize, height=self.boardsize)
@@ -88,6 +91,7 @@ class Application:
         root.bind("<Escape>", self.exit)
         self.map.bind("<Button-1>", self.mapClick)
         self.root.bind("<Button-3>", self.rightClick)
+        self.root.bind("p", self.quickplace)
 
         self.braintypes = {"Blue": randomBrain,
                            "Red": 0}
@@ -104,6 +108,7 @@ class Application:
         self.movingUnit = False
         self.turn = self.firstMove
         self.won = False
+        self.started = False
 
         # Initialize armies and brains
         self.blueArmy = Army("classical", "Blue")
@@ -116,6 +121,9 @@ class Application:
 
         if self.brains["Red"]:
             self.brains["Red"].placeArmy()
+            self.started = True
+        else:
+            self.unitsPlaced = 0
 
         self.drawSidePanels()
         self.drawMap()
@@ -155,8 +163,9 @@ class Application:
     def drawMap(self):
         """Draw the tiles and units on the map."""
 
-        # fill with green
+        # fill entire map with green
         self.map.create_rectangle(0, 0, self.boardsize, self.boardsize, fill=GRASS_COLOR)
+        self.map.create_image(0, 0, image=self.grassImage, anchor=NW)
 
         # draw lines
         for i in range(BOARD_WIDTH - 1):
@@ -193,11 +202,11 @@ class Application:
 
         unplacedRed = 0
         for unit in self.redArmy.army:
-            if unit.isOffBoard() and unit.alive:
+            if unit.isOffBoard():
                 x = unplacedRed % 10
                 y = unplacedRed / 10
                 unit.setPosition(self.offBoard(x), self.offBoard(y))
-                self.drawUnit(self.redUnitPanel, unit, x, y, RED_PLAYER_COLOR)
+                self.drawUnit(self.redUnitPanel, unit, x, y, RED_PLAYER_COLOR, unit.alive)
                 unplacedRed += 1
 
         unplacedBlue = 0
@@ -206,14 +215,24 @@ class Application:
                 x = unplacedBlue % 10
                 y = unplacedBlue / 10
                 unit.setPosition(self.offBoard(x), self.offBoard(y))
+                if not unit.alive:
+                    self.drawUnit(self.blueUnitPanel, unit, x, y, BLUE_PLAYER_COLOR, False)
                 unplacedBlue += 1
 
-    def drawUnit(self, canvas, unit, x, y, color):
+    def drawUnit(self, canvas, unit, x, y, color, alive=True):
         canvas.create_rectangle(x * TILE_PIX, y * TILE_PIX,
                                 (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
                                 fill=color, outline=None)
-        if unit.color == "Red" or DEBUG:
+        if unit.color == "Red" or DEBUG or not alive:
             canvas.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
+
+        if not alive:
+            canvas.create_line(x * TILE_PIX, y * TILE_PIX,
+                               (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
+                               width=3, fill=DEAD_COLOR, capstyle=ROUND)
+            canvas.create_line(x * TILE_PIX, (y + 1) * TILE_PIX,
+                               (x + 1) * TILE_PIX, y * TILE_PIX,
+                               width=3, fill=DEAD_COLOR, capstyle=ROUND)
 
     def isPool(self, x, y):
         """Check whether there is a pool at tile (x,y)."""
@@ -276,14 +295,21 @@ class Application:
             self.setStatusBar("You can't place units in the water!")
             return
 
-        if self.redArmy.getUnit(x, y) or self.blueArmy.getUnit(x, y):
+        if self.getUnit(x, y):
             self.setStatusBar("Can't place %s there, spot already taken!" % self.clickedUnit.name)
+            return
+
+        if y < (BOARD_WIDTH - 4):
+            self.setStatusBar("Must place unit in the first 4 rows")
             return
 
         self.clickedUnit.setPosition(x, y)
         self.setStatusBar("Placed %s" % self.clickedUnit)
         self.placingUnit = False
         self.clickedUnit = None
+        self.unitsPlaced += 1
+        if self.unitsPlaced == len(self.redArmy.army):
+            self.started = True
 
         self.drawSidePanels()
         self.drawMap()
@@ -309,7 +335,8 @@ class Application:
 
         self.drawMap()
 
-        self.endTurn()
+        if self.started:
+            self.endTurn()
 
     def endTurn(self):
         self.turn = "Blue" if self.turn == "Red" else "Blue"
@@ -337,6 +364,11 @@ class Application:
         (ux, uy) = unit.position
         dx = abs(ux - x)
         dy = abs(uy - y)
+
+        if not self.started:
+            if y < (BOARD_WIDTH - 4):
+                return False
+            return True
 
         if unit.walkFar:
             if ux != x and uy != y:
@@ -463,6 +495,16 @@ class Application:
 
         message.configure(width=40, justify=CENTER, wraplength=150)
         self.setStatusBar("%s has won the game!" % color)
+
+    def quickplace(self, event):
+        if not self.started:
+            tempBrain = randomBrain.Brain(self.redArmy)
+            tempBrain.placeArmy()
+
+            self.drawMap()
+            self.drawSidePanels()
+            self.setStatusBar("Randomly placed your army!")
+            self.started = True
 
     def exit(self, event=None):
         """Quit program."""

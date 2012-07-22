@@ -19,7 +19,7 @@ class Brain(Brain.Brain):
         if self.army.color == "Blue":
             rows = range(4)
         else:
-            rows = range(BOARD_WIDTH, BOARD_WIDTH - 4)
+            rows = range(BOARD_WIDTH - 4, BOARD_WIDTH)
 
         for row in rows:
             for column in range(BOARD_WIDTH):
