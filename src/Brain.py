@@ -11,7 +11,7 @@ class Brain:
     def placeArmy(self):
         pass
 
-    def doMove(self):
+    def findMove(self):
         pass
 
     def observe(self, armies):

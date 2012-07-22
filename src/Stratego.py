@@ -130,6 +130,7 @@ class Application:
 
         self.drawSidePanels()
         self.drawMap()
+        self.setStatusBar("Place your army, or press 'p' for random placement")
 
     def loadGame(self):
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
@@ -187,17 +188,22 @@ class Application:
         for unit in self.redArmy.army:
             if unit.alive:
                 (x, y) = unit.getPosition()
-                self.drawUnit(self.map, unit, x, y, RED_PLAYER_COLOR)
+                self.drawUnit(self.map, unit, x, y)
 
         for unit in self.blueArmy.army:
             if unit.alive:
                 (x, y) = unit.getPosition()
-                self.drawUnit(self.map, unit, x, y, BLUE_PLAYER_COLOR)
+                self.drawUnit(self.map, unit, x, y)
 
     def drawTile(self, x, y, tileColor):
-        """Fill a tile with its background color."""
-
+        """Fill a tile with its background color - Currently unused"""
         self.map.create_rectangle(x * TILE_PIX, y * TILE_PIX, (x + 1) * TILE_PIX, (y + 1) * TILE_PIX, fill=tileColor)
+
+    def drawMoveArrow(self, old, new):
+        """Draw an arrow indicating the opponent's move"""
+        self.map.create_line(int((old[0] + 0.5) * TILE_PIX), int((old[1] + 0.5) * TILE_PIX),
+                             int((new[0] + 0.5) * TILE_PIX), int((new[1] + 0.5) * TILE_PIX),
+                             width=3, fill=MOVE_ARROW_COLOR, arrow=LAST)
 
     def drawSidePanels(self):
         """Draw the unplaced units in the sidebar widget."""
@@ -211,7 +217,7 @@ class Application:
                 x = unplacedRed % 10
                 y = unplacedRed / 10
                 unit.setPosition(self.offBoard(x), self.offBoard(y))
-                self.drawUnit(self.redUnitPanel, unit, x, y, RED_PLAYER_COLOR, unit.alive)
+                self.drawUnit(self.redUnitPanel, unit, x, y)
                 unplacedRed += 1
 
         unplacedBlue = 0
@@ -220,18 +226,33 @@ class Application:
                 x = unplacedBlue % 10
                 y = unplacedBlue / 10
                 unit.setPosition(self.offBoard(x), self.offBoard(y))
-                if not unit.alive:
-                    self.drawUnit(self.blueUnitPanel, unit, x, y, BLUE_PLAYER_COLOR, False)
+                self.drawUnit(self.blueUnitPanel, unit, x, y)
                 unplacedBlue += 1
 
-    def drawUnit(self, canvas, unit, x, y, color, alive=True):
+    def drawUnit(self, canvas, unit, x, y, color=None):
+        if color == None:
+            color = RED_PLAYER_COLOR if unit.color == "Red" else BLUE_PLAYER_COLOR
+
+        hilight = SELECTED_RED_PLAYER_COLOR if unit.color == "Red" else SELECTED_BLUE_PLAYER_COLOR
+        shadow = SHADOW_RED_COLOR if unit.color == "Red" else SHADOW_BLUE_COLOR
+
+        # draw hilight
         canvas.create_rectangle(x * TILE_PIX, y * TILE_PIX,
                                 (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
-                                fill=color, outline=None)
-        if unit.color == "Red" or DEBUG or not alive:
+                                fill=hilight, outline=None)
+        # draw shadow
+        canvas.create_rectangle(x * TILE_PIX + TILE_BORDER, y * TILE_PIX + TILE_BORDER,
+                                (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
+                                fill=shadow, outline=None, width=0)
+        # draw center
+        canvas.create_rectangle(x * TILE_PIX + TILE_BORDER, y * TILE_PIX + TILE_BORDER,
+                                (x + 1) * TILE_PIX - TILE_BORDER, (y + 1) * TILE_PIX - TILE_BORDER,
+                                fill=color, outline=None, width=0)
+
+        if unit.color == "Red" or DEBUG or not unit.alive:
             canvas.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
 
-        if not alive:
+        if not unit.alive:
             canvas.create_line(x * TILE_PIX, y * TILE_PIX,
                                (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
                                width=3, fill=DEAD_COLOR, capstyle=ROUND)
@@ -343,17 +364,43 @@ class Application:
         if self.started:
             self.endTurn()
 
+    def otherPlayer(self, color):
+        if color == "Red": return "Blue"
+        return "Red"
+
     def endTurn(self):
-        self.turn = "Blue" if self.turn == "Red" else "Blue"
+        self.turn = self.otherPlayer(self.turn)
 
         if self.brains[self.turn] and not self.won: # computer player?
-            (oldlocation, move) = self.brains[self.turn].doMove(self)
-            self.setStatusBar("%s moves unit at %s to %s" % (self.turn, oldlocation, move))
+            (oldlocation, move) = self.brains[self.turn].findMove(self)
 
+            # check if the opponent can move
+            if move == None:
+                self.victory(self.otherPlayer(self.turn), True)
+                return
+
+            unit = self.getUnit(oldlocation[0], oldlocation[1])
+            enemy = self.getUnit(move[0], move[1])
+            if enemy:
+                self.attack(unit, enemy)
+            else:
+                unit.setPosition(move[0], move[1])
+
+            # check if player can move
+            tempBrain = randomBrain.Brain(self.redArmy)
+            playerMove = tempBrain.findMove(self)
+            if playerMove[0] == None:
+                self.victory(self.turn, True)
+                return
+
+            self.setStatusBar("%s moves unit at (%s,%s) to (%s,%s)" % (self.turn,
+                                                                       oldlocation[0], oldlocation[0],
+                                                                       move[0], move[1]))
             self.drawMap()
             self.drawSidePanels()
+            self.drawMoveArrow(oldlocation, move)
 
-        self.turn = "Blue" if self.turn == "Red" else "Blue"
+        self.turn = self.otherPlayer(self.turn)
 
     def legalMove(self, unit, x, y):
         """Check whether a move:
@@ -460,7 +507,7 @@ class Application:
 
         if panel:
             unit = army.getUnit(self.offBoard(x), self.offBoard(y))
-            if unit:
+            if unit and unit.alive:
                 self.setStatusBar("You clicked on %s %s" % (panel, unit))
 
                 if panel == "red": # clicked player unit
@@ -468,7 +515,7 @@ class Application:
                     self.placingUnit = True
 
                     # highlight unit
-                    self.drawUnit(self.redUnitPanel, unit, x, y, SELECTED_RED_PLAYER_COLOR)
+                    self.drawUnit(self.redUnitPanel, unit, x, y)
 
                     self.setStatusBar("Click the map to place this unit")
 
@@ -476,7 +523,7 @@ class Application:
         """Return negative coordinates used to indicate off-board position. Avoid zero."""
         return -x - 1
 
-    def victory(self, color):
+    def victory(self, color, noMoves=False):
         self.won = True
         top = Toplevel(width=300)
         flagimg1 = Image.open("%s/%s.%s" % (ICON_DIR, "flag", ICON_TYPE))
@@ -487,12 +534,19 @@ class Application:
 
         if color == "Red":
             top.title("Victory!")
-            message = Label(top, text="Congratulations! You've captured the enemy flag!")
+            if noMoves:
+                messageTxt = "The enemy army has been immobilized. Congratulations, you win!"
+            else:
+                messageTxt = "Congratulations! You've captured the enemy flag!"
 
         else:
             top.title("Defeat!")
-            message = Label(top, text="Unfortunately, the enemy has captured your flag. You lose.")
+            if noMoves:
+                messageTxt = "There are no valid moves left. You lose."
+            else:
+                messageTxt = "Unfortunately, the enemy has captured your flag. You lose."
 
+        message = Label(top, text=messageTxt)
         message.grid(row=0, column=0, sticky=NE, ipadx=15, ipady=50)
 
         ok = Button(top, text="OK", command=top.destroy)
