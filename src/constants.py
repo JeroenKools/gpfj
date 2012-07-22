@@ -8,9 +8,10 @@ Created on 28 jun. 2012
 GAME_NAME = 'Stratego'      # Kindral? Praetor?
 ICON_DIR = 'uniticons'
 ICON_TYPE = 'png'
-VERSION = 0.3               # Game version
+VERSION = 0.31              # Game version
 GRASS_COLOR = "#44AA22"     # Grass color rgb
 WATER_COLOR = "#3388AA"     # Water color rgb
+DEAD_COLOR = "#ABC"         # Dead unit cross color
 UNIT_PANEL_COLOR = "#BBB"   # Unit panel rgb
 RED_PLAYER_COLOR = "#A00"
 SELECTED_RED_PLAYER_COLOR = "#e00"
