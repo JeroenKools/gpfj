@@ -249,7 +249,7 @@ class Application:
                                 (x + 1) * TILE_PIX - TILE_BORDER, (y + 1) * TILE_PIX - TILE_BORDER,
                                 fill=color, outline=None, width=0)
 
-        if unit.color == "Red" or DEBUG or not unit.alive:
+        if unit.color == "Red" or DEBUG or not unit.alive or self.won:
             canvas.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
 
         if not unit.alive:
@@ -525,6 +525,7 @@ class Application:
 
     def victory(self, color, noMoves=False):
         self.won = True
+        self.drawMap()
         top = Toplevel(width=300)
         flagimg1 = Image.open("%s/%s.%s" % (ICON_DIR, "flag", ICON_TYPE))
         flagimg2 = ImageTk.PhotoImage(flagimg1)
