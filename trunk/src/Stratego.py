@@ -79,9 +79,12 @@ class Application:
 
         # Create map 
         self.boardsize = BOARD_WIDTH * TILE_PIX
-        grassImage = Image.open("terrain/grass.jpg")
+        grassImage = Image.open("%s/%s" % (TERRAIN_DIR, LAND_TEXTURE))
         grassImage = grassImage.resize((BOARD_WIDTH * TILE_PIX, BOARD_WIDTH * TILE_PIX), Image.BICUBIC)
         self.grassImage = ImageTk.PhotoImage(grassImage)
+        waterImage = Image.open("%s/%s" % (TERRAIN_DIR, WATER_TEXTURE))
+        waterImage = waterImage.resize((TILE_PIX, TILE_PIX), Image.BICUBIC)
+        self.waterImage = ImageTk.PhotoImage(waterImage)
         self.mapFrame = Frame(root, relief=SUNKEN, bd=2)
         self.mapFrame.pack(side=RIGHT, fill=BOTH, expand=1)
         self.map = Canvas(self.mapFrame, width=self.boardsize, height=self.boardsize)
@@ -162,22 +165,24 @@ class Application:
 
     def drawMap(self):
         """Draw the tiles and units on the map."""
+        self.map.delete(ALL)
 
         # fill entire map with green
-        self.map.create_rectangle(0, 0, self.boardsize, self.boardsize, fill=GRASS_COLOR)
+        #self.map.create_rectangle(0, 0, self.boardsize, self.boardsize, fill=GRASS_COLOR)
         self.map.create_image(0, 0, image=self.grassImage, anchor=NW)
+
+        # draw water
+        for x in range(BOARD_WIDTH):
+            for y in range(BOARD_WIDTH):
+                if self.isPool(x, y):
+                    self.map.create_image(x * TILE_PIX, y * TILE_PIX, image=self.waterImage, anchor=NW)
+                    #self.drawTile(x, y, WATER_COLOR)
 
         # draw lines
         for i in range(BOARD_WIDTH - 1):
             x = TILE_PIX * (i + 1)
             self.map.create_line(x, 0, x, self.boardsize, fill="black")
             self.map.create_line(0, x, self.boardsize, x, fill="black")
-
-        # draw water
-        for x in range(BOARD_WIDTH):
-            for y in range(BOARD_WIDTH):
-                if self.isPool(x, y):
-                    self.drawTile(x, y, WATER_COLOR)
 
         for unit in self.redArmy.army:
             if unit.alive:
