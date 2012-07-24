@@ -13,10 +13,11 @@ import Brain, randomBrain
 from Tkinter import *
 import tkMessageBox
 from PIL import Image, ImageTk
+import winsound
 
 from math import sin, pi
 import webbrowser
-from textwrap import fill, dedent
+from textwrap import fill, dedent, TextWrapper
 
 
 class Application:
@@ -151,12 +152,17 @@ class Application:
         webbrowser.open("http://code.google.com/p/gpfj")
 
     def about(self):
-        text = """\
-        Stratego is a game developed by Jeroen Kools and Fedde Burgers
+        wrapper = TextWrapper(width = 60)
+        p1 = """\
+        %s is a game developed by Jeroen Kools and Fedde Burgers
         for the course 'Game Programming' at the University of Amsterdam in 2012.
-        """
+        """ % GAME_NAME
+        
+        p2 = """\
+        It is inspired by the classic board game Stratego (copyright Hasbro).
+        """ 
 
-        text = fill(dedent(text), 60)
+        text = wrapper.fill(dedent(p1)) + "\n\n" + wrapper.fill(dedent(p2))
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), text)
 
     def setStatusBar(self, newText):
@@ -539,6 +545,8 @@ class Application:
                 messageTxt = "The enemy army has been immobilized. Congratulations, you win!"
             else:
                 messageTxt = "Congratulations! You've captured the enemy flag!"
+            winsound.PlaySound("%s/%s" % (SOUND_DIR, SOUND_WIN),
+                               winsound.SND_FILENAME)
 
         else:
             top.title("Defeat!")
@@ -546,6 +554,8 @@ class Application:
                 messageTxt = "There are no valid moves left. You lose."
             else:
                 messageTxt = "Unfortunately, the enemy has captured your flag. You lose."
+            winsound.PlaySound("%s/%s" % (SOUND_DIR, SOUND_LOSE),
+                               winsound.SND_FILENAME)                
 
         message = Label(top, text=messageTxt)
         message.grid(row=0, column=0, sticky=NE, ipadx=15, ipady=50)

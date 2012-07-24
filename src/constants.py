@@ -6,8 +6,10 @@ Created on 28 jun. 2012
 '''
 
 GAME_NAME = 'Stratego'      # Kindral? Praetor?
-VERSION = 0.35              # Game version
+VERSION = 0.36              # Game version
+DEBUG = True               # If True, show enemy units' ranks (cheat/debug)
 
+## GRAPHICS ##
 ICON_DIR = 'uniticons'
 ICON_TYPE = 'png'
 TERRAIN_DIR = "terrain"
@@ -28,8 +30,14 @@ BLUE_PLAYER_COLOR = "#00A"
 SELECTED_BLUE_PLAYER_COLOR = '#00E'
 SHADOW_BLUE_COLOR = "#006"
 
+## AUDIO ##
+SOUND_DIR = "sounds"
+SOUND_WIN = "90140__pierrecartoons1979__win3.wav"
+SOUND_LOSE = "73581__benboncan__sad-trombone.wav"
+
+## GAME PARAMS ##
+
 BOARD_WIDTH = 10            # Board size in tiles, classic Stratego value is 10 
 TILE_PIX = 50               # Tile size in pixels, tested between 30 and 60
 TILE_BORDER = 3             # Width of the tile highlights/borders
 POOLS = 2                   # Number of pools, classic Stratego value is 2
-DEBUG = False               # If True, show enemy units' ranks (cheat/debug)
