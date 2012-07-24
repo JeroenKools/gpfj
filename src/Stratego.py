@@ -1,5 +1,4 @@
 '''
-Stratego
 By Jeroen Kools and Fedde Burgers
 
 Developed for the course "Game Programming" at the University of Amsterdam
@@ -13,7 +12,12 @@ import Brain, randomBrain
 from Tkinter import *
 import tkMessageBox
 from PIL import Image, ImageTk
-import winsound
+try:
+    import winsound
+    playSound = True
+except: # not on Windows
+    playSound = False 
+    
 
 from math import sin, pi
 import webbrowser
@@ -115,16 +119,17 @@ class Application:
         self.started = False
 
         # Initialize armies and brains
-        self.blueArmy = Army("classical", "Blue")
-        self.redArmy = Army("classical", "Red")
+        self.armyHeight = min(4, (BOARD_WIDTH-2)/2)
+        self.blueArmy = Army("classical", "Blue", BOARD_WIDTH * self.armyHeight)
+        self.redArmy = Army("classical", "Red", BOARD_WIDTH * self.armyHeight)
         self.brains = {"Blue": self.braintypes["Blue"].Brain(self.blueArmy) if self.braintypes["Blue"] else 0,
                            "Red": self.braintypes["Red"].Brain(self.redArmy) if self.braintypes["Red"] else 0}
 
         if self.brains["Blue"]:
-            self.brains["Blue"].placeArmy()
+            self.brains["Blue"].placeArmy(self.armyHeight)
 
         if self.brains["Red"]:
-            self.brains["Red"].placeArmy()
+            self.brains["Red"].placeArmy(self.armyHeight)
             self.started = True
         else:
             self.unitsPlaced = 0
@@ -159,7 +164,8 @@ class Application:
         """ % GAME_NAME
         
         p2 = """\
-        It is inspired by the classic board game Stratego (copyright Hasbro).
+        The game is inspired by the classic board game Stratego (copyright Hasbro). 
+        Sounds by pierrecartoons1979 and benboncan at freesounds.org 
         """ 
 
         text = wrapper.fill(dedent(p1)) + "\n\n" + wrapper.fill(dedent(p2))
@@ -213,6 +219,8 @@ class Application:
 
     def drawSidePanels(self):
         """Draw the unplaced units in the sidebar widget."""
+        self.blueUnitPanel.delete(ALL)
+        self.redUnitPanel.delete(ALL)
 
         self.blueUnitPanel.create_rectangle(0, 0, 10 * TILE_PIX, 4 * TILE_PIX, fill=UNIT_PANEL_COLOR)
         self.redUnitPanel.create_rectangle(0, 0, 10 * TILE_PIX, 4 * TILE_PIX, fill=UNIT_PANEL_COLOR)
@@ -545,7 +553,9 @@ class Application:
                 messageTxt = "The enemy army has been immobilized. Congratulations, you win!"
             else:
                 messageTxt = "Congratulations! You've captured the enemy flag!"
-            winsound.PlaySound("%s/%s" % (SOUND_DIR, SOUND_WIN),
+                
+            if playSound:
+                winsound.PlaySound("%s/%s" % (SOUND_DIR, SOUND_WIN),
                                winsound.SND_FILENAME)
 
         else:
@@ -554,7 +564,9 @@ class Application:
                 messageTxt = "There are no valid moves left. You lose."
             else:
                 messageTxt = "Unfortunately, the enemy has captured your flag. You lose."
-            winsound.PlaySound("%s/%s" % (SOUND_DIR, SOUND_LOSE),
+            
+            if playSound:
+                winsound.PlaySound("%s/%s" % (SOUND_DIR, SOUND_LOSE),
                                winsound.SND_FILENAME)                
 
         message = Label(top, text=messageTxt)
@@ -569,7 +581,7 @@ class Application:
     def quickplace(self, event):
         if not self.started:
             tempBrain = randomBrain.Brain(self.redArmy)
-            tempBrain.placeArmy()
+            tempBrain.placeArmy(self.armyHeight)
 
             self.drawMap()
             self.drawSidePanels()

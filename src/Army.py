@@ -2,32 +2,42 @@ from constants import *
 from Tkinter import PhotoImage
 from PIL import Image, ImageTk
 
-
 class Army:
     ranks = ['marshal', 'general', 'colonel', 'major', 'captain',
              'lieutenant', 'sergeant', 'canDefuseBomb', 'scout', 'spy', 'bomb', 'flag']
 
-    def __init__(self, armyType="classical", color="Red"):
+    def __init__(self, armyType="classical", color="Red", size = 40):
         """Represents a Stratego army as a list of Units."""
 
         self.armyType = armyType
         self.color = color
 
         if armyType == "classical":
-            self.army = [
+            self.army = [ 
+                          Flag(),
                           Marshal(),
                           General(),
                           Colonel(), Colonel(),
                           Major(), Major(), Major(),
-                          Captain(), Captain(), Captain(), Captain(),
-                          Lieutenant(), Lieutenant(), Lieutenant(), Lieutenant(),
-                          Sergeant(), Sergeant(), Sergeant(), Sergeant(),
-                          Miner(), Miner(), Miner(), Miner(), Miner(),
-                          Scout(), Scout(), Scout(), Scout(), Scout(), Scout(), Scout(), Scout(),
-                          Spy(),
-                          Bomb(), Bomb(), Bomb(), Bomb(), Bomb(), Bomb(),
-                          Flag()
             ]
+            
+            scaled = 0
+            rankDict = {Captain: 4/31.,
+                         Lieutenant: 4/31.,
+                         Sergeant: 4/31.,
+                         Miner: 5/31.,
+                         Scout: 8/31.}
+            
+            for rank, nr in rankDict.items():
+                for i in range(int(round(nr*(size-9)))):
+                    self.army.append(rank())
+                    scaled += 1
+                    
+            for i in range(size-scaled-9):
+                self.army.append(Bomb())
+                
+            self.army.append(Spy())
+            
         else:
             pass # TODO: add other army options
 
