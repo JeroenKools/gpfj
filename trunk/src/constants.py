@@ -1,13 +1,13 @@
 '''
-Constants module for Stratego
+Constants module
 Created on 28 jun. 2012
 
 @author: Jeroen Kools and Fedde Burgers
 '''
 
-GAME_NAME = 'Stratego'      # Kindral? Praetor?
-VERSION = 0.36              # Game version
-DEBUG = True               # If True, show enemy units' ranks (cheat/debug)
+GAME_NAME = 'Kindral'      # Kindral? Praetor?
+VERSION = 0.37              # Game version
+DEBUG = False               # If True, show enemy units' ranks (cheat/debug)
 
 ## GRAPHICS ##
 ICON_DIR = 'uniticons'
@@ -36,8 +36,7 @@ SOUND_WIN = "90140__pierrecartoons1979__win3.wav"
 SOUND_LOSE = "73581__benboncan__sad-trombone.wav"
 
 ## GAME PARAMS ##
-
-BOARD_WIDTH = 10            # Board size in tiles, classic Stratego value is 10 
-TILE_PIX = 50               # Tile size in pixels, tested between 30 and 60
+BOARD_WIDTH = 10             # Board size in tiles, classic Stratego value is 10, tested between 6 and 20. 
+TILE_PIX = 50               # Tile size in pixels, tested between 10 and 80. Recommended: 50
 TILE_BORDER = 3             # Width of the tile highlights/borders
 POOLS = 2                   # Number of pools, classic Stratego value is 2

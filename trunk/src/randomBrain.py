@@ -12,14 +12,14 @@ class Brain(Brain.Brain):
     def __init__(self, army):
         self.army = army
 
-    def placeArmy(self):
+    def placeArmy(self, armyHeight):
 
         positions = []
 
         if self.army.color == "Blue":
-            rows = range(4)
+            rows = range(armyHeight)
         else:
-            rows = range(BOARD_WIDTH - 4, BOARD_WIDTH)
+            rows = range(BOARD_WIDTH - armyHeight, BOARD_WIDTH)
 
         for row in rows:
             for column in range(BOARD_WIDTH):
