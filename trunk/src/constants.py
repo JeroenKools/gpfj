@@ -6,7 +6,7 @@ Created on 28 jun. 2012
 '''
 
 GAME_NAME = 'Kindral'      # Kindral? Praetor?
-VERSION = 0.37              # Game version
+VERSION = 0.38              # Game version
 DEBUG = False               # If True, show enemy units' ranks (cheat/debug)
 
 ## GRAPHICS ##

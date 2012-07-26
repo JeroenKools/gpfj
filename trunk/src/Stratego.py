@@ -263,8 +263,12 @@ class Application:
                                 (x + 1) * TILE_PIX - TILE_BORDER, (y + 1) * TILE_PIX - TILE_BORDER,
                                 fill=color, outline=None, width=0)
 
-        if unit.color == "Red" or DEBUG or not unit.alive or self.won:
+        if unit.color == "Red" or DEBUG or not unit.alive or self.won or unit.justAttacked:
+            unit.justAttacked = False
             canvas.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
+            if unit.name != "Bomb" and unit.name != "Flag":
+                canvas.create_text(((x+.2) * TILE_PIX, (y+.8) * TILE_PIX),
+                                   text = unit.rank, fill = MOVE_ARROW_COLOR)
 
         if not unit.alive:
             canvas.create_line(x * TILE_PIX, y * TILE_PIX,
@@ -374,6 +378,8 @@ class Application:
                     self.drawMap()
             else:
                 self.attack(self.clickedUnit, target)
+                if self.started:
+                    self.endTurn()
             return
 
         else:
@@ -485,16 +491,19 @@ class Application:
         elif attacker.canDefuseBomb and defender.name == "Bomb":
             attacker.position = defender.position
             defender.die()
+            attacker.justAttacked = True
             text += "The mine was disabled."
 
         elif attacker.canKillMarshal and defender.name == "Marshal":
             attacker.position = defender.position
             defender.die()
+            attacker.justAttacked = True
             text += "The marshal has been assassinated."
 
         elif attacker.rank > defender.rank:
             attacker.position = defender.position
             defender.die()
+            attacker.justAttacked = True
             text += "The %s was defeated." % defender.name
 
         elif attacker.rank == defender.rank:
@@ -510,7 +519,7 @@ class Application:
             text = fill(dedent(text), 60)
             tkMessageBox.showinfo("Battle result", text)
 
-        self.drawMap()
+        #self.drawMap()
         self.drawSidePanels()
         self.clickedUnit = None
         self.movingUnit = False

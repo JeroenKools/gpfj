@@ -63,6 +63,7 @@ class Unit:
         self.canDefuseBomb = False          # canDefuseBomb ability
         self.canMove = True
         self.alive = True
+        self.justAttacked = False
 
     def getPosition(self):
         return self.position
