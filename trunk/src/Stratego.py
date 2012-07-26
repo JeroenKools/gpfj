@@ -320,7 +320,7 @@ class Application:
                     return
 
                 else:
-                    if unit.isMovable():
+                    if unit.isMovable() or not self.started:
                         self.movingUnit = True
                         self.clickedUnit = unit
                         self.drawUnit(self.map, unit, x, y, SELECTED_RED_PLAYER_COLOR)
@@ -361,10 +361,20 @@ class Application:
 
         target = self.getUnit(x, y)
         if target:
-            if target.color == self.clickedUnit.color:
+            if target.color == self.clickedUnit.color and self.started:
                 self.setStatusBar("You can't move there - tile already occupied!")
+                
+            elif target.color == self.clickedUnit.color and not self.started: # switch units
+                    (xold, yold) = self.clickedUnit.getPosition()
+                    target.setPosition(xold, yold)
+                    self.clickedUnit.setPosition(x, y)
+                    self.clickedUnit = None
+                    self.movingUnit = None
+                    
+                    self.drawMap()
             else:
                 self.attack(self.clickedUnit, target)
+            return
 
         else:
             self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
@@ -438,6 +448,9 @@ class Application:
 
         if unit.walkFar:
             if ux != x and uy != y:
+                return False
+            
+            if (dx + dy) == 0:
                 return False
 
             if uy == y:
