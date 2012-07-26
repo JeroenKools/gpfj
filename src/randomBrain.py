@@ -23,12 +23,14 @@ class Brain(Brain.Brain):
 
         for row in rows:
             for column in range(BOARD_WIDTH):
-                positions += [(column, row)]
+                if self.army.getUnit(column, row) == None:
+                    positions += [(column, row)]
 
         shuffle(positions)
 
         for unit in self.army.army:
-            unit.position = positions.pop()
+            if unit.isOffBoard():
+                unit.position = positions.pop()
 
     def findMove(self, gamestate):
         move = None
