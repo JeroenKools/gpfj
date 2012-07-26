@@ -424,7 +424,7 @@ class Application:
                 return
 
             self.setStatusBar("%s moves unit at (%s,%s) to (%s,%s)" % (self.turn,
-                                                                       oldlocation[0], oldlocation[0],
+                                                                       oldlocation[0], oldlocation[1],
                                                                        move[0], move[1]))
             self.drawMap()
             self.drawSidePanels()
@@ -435,6 +435,7 @@ class Application:
     def legalMove(self, unit, x, y):
         """Check whether a move:
             - does not end in the water
+            - does not end off-board
             - is only in one direction
             - is not farther than one step, for non-scouts
             - does not jump over obstacles, for scouts
@@ -446,6 +447,9 @@ class Application:
         (ux, uy) = unit.position
         dx = abs(ux - x)
         dy = abs(uy - y)
+        
+        if x >= BOARD_WIDTH or y >= BOARD_WIDTH:
+            return False
 
         if not self.started:
             if y < (BOARD_WIDTH - 4):
@@ -517,7 +521,30 @@ class Application:
 
         if not self.won:
             text = fill(dedent(text), 60)
-            tkMessageBox.showinfo("Battle result", text)
+            
+            top = Toplevel(width=300)            
+            top.title("Battle result")
+            top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+            
+            atkImg = ImageTk.PhotoImage(attacker.getImage(120))
+            atkLbl = Label(top, image=atkImg)
+            atkLbl.image = atkImg
+            atkLbl.grid(row=0, column=0, sticky=NW)    
+            
+            defImg = ImageTk.PhotoImage(defender.getImage(120))
+            defLbl = Label(top, image=defImg)
+            defLbl.image = defImg           
+
+            message = Label(top, text=text)
+            message.grid(row=0, column=1, sticky=NE, ipadx=15, ipady=50)
+            
+            defLbl.grid(row=0, column=2, sticky=NE)
+
+            ok = Button(top, text="OK", command=top.destroy)
+            ok.grid(row=1, column=1, ipadx=15, ipady=5, pady=5)
+            self.root.wait_window(top)
+            
+            #tkMessageBox.showinfo("Battle result", text)
 
         #self.drawMap()
         self.drawSidePanels()
@@ -563,6 +590,7 @@ class Application:
         self.won = True
         self.drawMap()
         top = Toplevel(width=300)
+        top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
         flagimg1 = Image.open("%s/%s.%s" % (ICON_DIR, "flag", ICON_TYPE))
         flagimg2 = ImageTk.PhotoImage(flagimg1)
         lbl = Label(top, image=flagimg2)
