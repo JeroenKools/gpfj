@@ -84,6 +84,12 @@ class Unit:
 
     def getIcon(self):
         return self.icon
+    
+    def getImage(self, size):
+        img = Image.open("%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
+        img = img.resize((2 * size, 2 * size), Image.BICUBIC)
+        img = img.resize((size, size), Image.ANTIALIAS)
+        return img
 
     def isMovable(self):
         return self.canMove
