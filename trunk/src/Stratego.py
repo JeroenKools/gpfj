@@ -7,7 +7,7 @@ Developed for the course "Game Programming" at the University of Amsterdam
 
 from Army import Army
 from constants import *
-import Brain, randomBrain
+import Brain, randomBrain, SmartBrain
 
 from Tkinter import *
 import tkMessageBox
@@ -101,7 +101,7 @@ class Application:
         self.root.bind("<Button-3>", self.rightClick)
         self.root.bind("p", self.quickplace)
 
-        self.braintypes = {"Blue": randomBrain,
+        self.braintypes = {"Blue": SmartBrain,
                            "Red": 0}
         self.firstMove = "Red"
 
@@ -126,7 +126,7 @@ class Application:
                            "Red": self.braintypes["Red"].Brain(self.redArmy) if self.braintypes["Red"] else 0}
 
         if self.brains["Blue"]:
-            self.brains["Blue"].placeArmy(self.armyHeight)
+            self.brains["Blue"].placeArmy(self.armyHeight, self, self.blueArmy)
 
         if self.brains["Red"]:
             self.brains["Red"].placeArmy(self.armyHeight)
