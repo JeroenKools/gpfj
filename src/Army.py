@@ -41,6 +41,12 @@ class Army:
         else:
             pass # TODO: add other army options
 
+        self.nr_of_bombs = 0;
+
+        for unit in self.army:
+            if unit.name == 'Bomb':
+                self.nr_of_bombs += 1
+
         for unit in self.army:
             unit.color = self.color
 
