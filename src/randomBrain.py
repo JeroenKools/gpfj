@@ -9,8 +9,9 @@ from constants import *
 from random import shuffle, choice, randint
 
 class Brain(Brain.Brain):
-    def __init__(self, army):
+    def __init__(self, game, army):
         self.army = army
+        self.game = game
 
     def placeArmy(self, armyHeight):
 
@@ -32,7 +33,7 @@ class Brain(Brain.Brain):
             if unit.isOffBoard():
                 unit.position = positions.pop()
 
-    def findMove(self, gamestate):
+    def findMove(self):
         move = None
         order = range(len(self.army.army))
         shuffle(order)
@@ -63,7 +64,7 @@ class Brain(Brain.Brain):
                               direction[0] >= 0 and direction[0] < BOARD_WIDTH and
                               direction[1] >= 0 and direction[1] < BOARD_WIDTH and
                               not self.army.getUnit(direction[0], direction[1]) and
-                              gamestate.legalMove(unit, direction[0], direction[1])]
+                              self.game.legalMove(unit, direction[0], direction[1])]
 
                 if len(directions) >= 1:
                     move = choice(directions)

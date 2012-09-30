@@ -6,7 +6,7 @@ Created on 28 jun. 2012
 '''
 
 GAME_NAME = 'Kindral'      # Kindral? Praetor?
-VERSION = 0.40              # Game version
+VERSION = 0.41              # Game version
 DEBUG = True              # If True, show enemy units' ranks (cheat/debug)
 
 ## GRAPHICS ##
@@ -19,7 +19,7 @@ WATER_TEXTURE = "water.jpg"
 GRASS_COLOR = "#44AA22"     # Grass color rgb
 WATER_COLOR = "#3388AA"     # Water color rgb
 DEAD_COLOR = "#567"         # Dead unit cross color
-MOVE_ARROW_COLOR = "#FFA"
+MOVE_ARROW_COLOR = "#FE6"
 UNIT_PANEL_COLOR = "#BBB"   # Unit panel rgb
 
 RED_PLAYER_COLOR = "#A00"
@@ -34,10 +34,12 @@ SHADOW_BLUE_COLOR = "#006"
 SOUND_DIR = "sounds"
 SOUND_WIN = "90140__pierrecartoons1979__win3.wav"
 SOUND_LOSE = "73581__benboncan__sad-trombone.wav"
+SOUND_COMBAT = "27826__erdie__sword01.wav"
+SOUND_BOMB = "80401__steveygos93__explosion2.wav"
 
 ## GAME PARAMS ##
 BOARD_WIDTH = 10        # Board size in tiles, classic Stratego value is 10, tested between 6 and 20. 
 TILE_PIX = 50           # Tile size in pixels, tested between 10 and 80. Recommended: 50
 TILE_BORDER = 3         # Width of the tile highlights/borders
 POOLS = 2               # Number of pools, classic Stratego value is 2
-#OPP_BRAIN = SmartBrain
+
