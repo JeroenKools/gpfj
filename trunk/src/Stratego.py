@@ -7,7 +7,7 @@ Developed for the course "Game Programming" at the University of Amsterdam
 
 from Army import Army
 from constants import *
-import Brain, randomBrain, SmartBrain
+import Brain, randomBrain, SmartBrain, CarefulBrain
 
 from Tkinter import *
 import tkMessageBox
@@ -21,12 +21,19 @@ except: # not on Windows
 
 from math import sin, pi
 import webbrowser
+import os
+import pickle
+import datetime
 from textwrap import fill, dedent, TextWrapper
 
 
 class Application:
     def __init__(self, root):
         self.root = root
+        self.defaultBrainName = "SmartBrain" # Brain used for the first game, can be changed in settings
+        self.blueBrain = eval(self.defaultBrainName)
+        self.redBrain = 0
+        self.blueBrainName = self.defaultBrainName
 
         # Create menu bar
         menuBar = Menu(root)
@@ -41,7 +48,7 @@ class Application:
 
         optionMenu = Menu(menuBar, tearoff=0)
         optionMenu.add_command(label="Settings", command=self.settings)
-        optionMenu.add_command(label="Statistics", command=self.statistics)
+        optionMenu.add_command(label="Statistics", command=self.showStats)
         menuBar.add_cascade(label="Options", menu=optionMenu)
 
         helpmenu = Menu(menuBar, tearoff=0)
@@ -58,7 +65,7 @@ class Application:
         Button(toolbar, text="Load", width=6, command=self.loadGame).pack(side=LEFT, padx=2, pady=2)
         Button(toolbar, text="Save", width=6, command=self.saveGame).pack(side=LEFT, padx=2, pady=2)
         Button(toolbar, text="Settings", width=6, command=self.settings).pack(side=LEFT, padx=2, pady=2)
-        Button(toolbar, text="Stats", width=6, command=self.statistics).pack(side=LEFT, padx=2, pady=2)
+        Button(toolbar, text="Stats", width=6, command=self.showStats).pack(side=LEFT, padx=2, pady=2)
         toolbar.pack(side=TOP, fill=X)
 
         # Create status bar
@@ -100,11 +107,10 @@ class Application:
         self.map.bind("<Button-1>", self.mapClick)
         self.root.bind("<Button-3>", self.rightClick)
         self.root.bind("p", self.quickplace)
+        self.root.protocol("WM_DELETE_WINDOW", self.exit)
 
-        self.braintypes = {"Blue": SmartBrain,
-                           "Red": 0}
         self.firstMove = "Red"
-
+        self.loadStats()
         self.newGame()
 
     def newGame(self):
@@ -120,13 +126,15 @@ class Application:
 
         # Initialize armies and brains
         self.armyHeight = min(4, (BOARD_WIDTH-2)/2)
+        self.braintypes = {"Blue": self.blueBrain,
+                           "Red": self.redBrain}
         self.blueArmy = Army("classical", "Blue", BOARD_WIDTH * self.armyHeight)
         self.redArmy = Army("classical", "Red", BOARD_WIDTH * self.armyHeight)
-        self.brains = {"Blue": self.braintypes["Blue"].Brain(self.blueArmy) if self.braintypes["Blue"] else 0,
-                           "Red": self.braintypes["Red"].Brain(self.redArmy) if self.braintypes["Red"] else 0}
+        self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy) if self.braintypes["Blue"] else 0,
+                           "Red": self.braintypes["Red"].Brain(self, self.redArmy) if self.braintypes["Red"] else 0}
 
         if self.brains["Blue"]:
-            self.brains["Blue"].placeArmy(self.armyHeight, self, self.blueArmy)
+            self.brains["Blue"].placeArmy(self.armyHeight)
 
         if self.brains["Red"]:
             self.brains["Red"].placeArmy(self.armyHeight)
@@ -145,10 +153,78 @@ class Application:
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
 
     def settings(self):
-        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
+        self.settingsWindow = Toplevel(width=300)
+        
+        lblBrain = Label(self.settingsWindow, text= "Opponent Brain")        
+        self.blueBrainVar = StringVar(self.settingsWindow)
+        mnuBrain = OptionMenu(self.settingsWindow, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
+        mnuBrain.config(width=20)
+        self.blueBrainVar.set(self.blueBrainName)
+        lblBrain.grid(column=0, row=0, sticky="ew", ipadx = 10, ipady = 10)
+        mnuBrain.grid(column=1, row=0, sticky="ew", padx = 10)
+        
+        btnOK = Button(self.settingsWindow, text = "OK", command = self.updateSettings)
+        btnOK.grid(column=0, row=1, columnspan = 2, ipadx = 15, pady = 8)
+        
+    def updateSettings(self):
+        self.blueBrainName = self.blueBrainVar.get()
+        self.blueBrain = eval(self.blueBrainName)
+        self.setStatusBar("Selected " +self.blueBrainName) 
+        self.settingsWindow.destroy()
+        
+    def loadStats(self):
+        if os.path.exists('stats.cfg'):
+            statsfile = open('stats.cfg', 'r')
+            self.stats = pickle.load(statsfile)
+            self.stats.lastChecked = datetime.datetime.now() 
+            statsfile.close()
+        else:
+            self.stats = Stats(datetime.datetime.now()) 
 
-    def statistics(self):
-        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
+    def showStats(self):
+        self.stats.refresh()
+        t = self.stats.totalRunTime
+        hours = t.seconds/3600
+        minutes = (t.seconds%3600)/60
+        seconds = t.seconds%60
+        timestr = '%s days, %i:%02i:%02i' % (t.days,hours,minutes,seconds)        
+        
+        self.statsWindow = Toplevel(width=300)
+        self.statsWindow.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+        lblNames = Label(self.statsWindow, justify = LEFT, 
+                         text = dedent("""
+                         Games played:
+                         Won:
+                         Lost:
+                         Win percentage:
+                         
+                         Longest winning streak:
+                         Lowest casualties:
+                         
+                         Total time played:"""))        
+        lblNames.grid(column=0, row=0, sticky="ew", ipadx=35, ipady=10)
+        
+        lblStats = Label(self.statsWindow, justify = RIGHT,
+                         text = """ 
+                         %i
+                         %i
+                         %i
+                         %.1f%%
+                         
+                         %i
+                         %i
+                         
+                         %s""" % (self.stats.gamesPlayed,self.stats.gamesWon,self.stats.gamesLost,
+                                  100*self.stats.gamesWon/max(1,self.stats.gamesPlayed),
+                                  self.stats.longestStreak,
+                                  0,timestr))
+        lblStats.grid(column=1, row=0, sticky="ew", ipadx=35, ipady=10)
+        
+        btnOK = Button(self.statsWindow, text = "OK", command = self.closeStats)
+        btnOK.grid(column=0, row=1, columnspan = 2, ipadx=15, pady=15)
+        
+    def closeStats(self):
+        self.statsWindow.destroy()
 
     def help(self):
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
@@ -165,7 +241,7 @@ class Application:
         
         p2 = """\
         The game is inspired by the classic board game Stratego (copyright Hasbro). 
-        Sounds by pierrecartoons1979 and benboncan at freesounds.org 
+        Sounds by pierrecartoons1979, steveygos93, Erdie and benboncan at freesounds.org 
         """ 
 
         text = wrapper.fill(dedent(p1)) + "\n\n" + wrapper.fill(dedent(p2))
@@ -215,7 +291,7 @@ class Application:
         """Draw an arrow indicating the opponent's move"""
         self.map.create_line(int((old[0] + 0.5) * TILE_PIX), int((old[1] + 0.5) * TILE_PIX),
                              int((new[0] + 0.5) * TILE_PIX), int((new[1] + 0.5) * TILE_PIX),
-                             width=3, fill=MOVE_ARROW_COLOR, arrow=LAST)
+                             width=3, fill=MOVE_ARROW_COLOR, arrow=LAST, arrowshape = "8 10 6")
 
     def drawSidePanels(self):
         """Draw the unplaced units in the sidebar widget."""
@@ -343,7 +419,7 @@ class Application:
             self.setStatusBar("Can't place %s there, spot already taken!" % self.clickedUnit.name)
             return
 
-        if y < (BOARD_WIDTH - 4):
+        if y < (BOARD_WIDTH - 4): #TODO: fix for other than standard sizes
             self.setStatusBar("Must place unit in the first 4 rows")
             return
 
@@ -402,7 +478,7 @@ class Application:
         self.turn = self.otherPlayer(self.turn)
 
         if self.brains[self.turn] and not self.won: # computer player?
-            (oldlocation, move) = self.brains[self.turn].findMove(self)
+            (oldlocation, move) = self.brains[self.turn].findMove()
 
             # check if the opponent can move
             if move == None:
@@ -417,8 +493,8 @@ class Application:
                 unit.setPosition(move[0], move[1])
 
             # check if player can move
-            tempBrain = randomBrain.Brain(self.redArmy)
-            playerMove = tempBrain.findMove(self)
+            tempBrain = randomBrain.Brain(self, self.redArmy)
+            playerMove = tempBrain.findMove()
             if playerMove[0] == None:
                 self.victory(self.turn, True)
                 return
@@ -542,6 +618,10 @@ class Application:
 
             ok = Button(top, text="OK", command=top.destroy)
             ok.grid(row=1, column=1, ipadx=15, ipady=5, pady=5)
+            if defender.name == "Bomb":
+                self.playSound(SOUND_BOMB)
+            else:
+                self.playSound(SOUND_COMBAT)
             self.root.wait_window(top)
             
             #tkMessageBox.showinfo("Battle result", text)
@@ -603,22 +683,15 @@ class Application:
                 messageTxt = "The enemy army has been immobilized. Congratulations, you win!"
             else:
                 messageTxt = "Congratulations! You've captured the enemy flag!"
-                
-            if playSound:
-                winsound.PlaySound("%s/%s" % (SOUND_DIR, SOUND_WIN),
-                               winsound.SND_FILENAME)
 
         else:
             top.title("Defeat!")
             if noMoves:
                 messageTxt = "There are no valid moves left. You lose."
             else:
-                messageTxt = "Unfortunately, the enemy has captured your flag. You lose."
-            
-            if playSound:
-                winsound.PlaySound("%s/%s" % (SOUND_DIR, SOUND_LOSE),
-                               winsound.SND_FILENAME)                
-
+                messageTxt = "Unfortunately, the enemy has captured your flag. You lose."   
+        
+        self.stats.addGame(color == "Red")          
         message = Label(top, text=messageTxt)
         message.grid(row=0, column=0, sticky=NE, ipadx=15, ipady=50)
 
@@ -627,10 +700,19 @@ class Application:
 
         message.configure(width=40, justify=CENTER, wraplength=150)
         self.setStatusBar("%s has won the game!" % color)
+        if playSound: 
+            if color == "Red":
+                self.playSound(SOUND_WIN)
+            else:
+                self.playSound(SOUND_LOSE)
 
+    def playSound(self,name):
+        winsound.PlaySound("%s/%s" % (SOUND_DIR, name),
+                               winsound.SND_FILENAME|winsound.SND_ASYNC)
+				
     def quickplace(self, event):
         if not self.started:
-            tempBrain = randomBrain.Brain(self.redArmy)
+            tempBrain = randomBrain.Brain(self, self.redArmy)
             tempBrain.placeArmy(self.armyHeight)
 
             self.drawMap()
@@ -640,8 +722,45 @@ class Application:
 
     def exit(self, event=None):
         """Quit program."""
-
+        self.stats.save()
         self.root.quit()
+        
+    def closebutton(self):
+        print 'foo! foooo!'
+        
+class Stats:
+    def __init__(self, lastChecked):
+        self.gamesPlayed = 0
+        self.gamesWon = 0
+        self.gamesLost = 0
+        
+        self.currentStreak = 0
+        self.longestStreak = 0
+        self.lowestCasualties = 0
+         
+        self.totalRunTime = datetime.timedelta(0)
+        self.lastChecked = lastChecked
+        
+    def addGame(self, won):
+        self.gamesPlayed += 1
+        if won:
+            self.gamesWon += 1
+            self.currentStreak += 1
+            self.longestStreak = max(self.longestStreak, self.currentStreak)
+        else:
+            self.gamesLost += 1
+            self.currentStreak = 0
+        
+    def refresh(self):
+        self.totalRunTime += (datetime.datetime.now() - self.lastChecked)
+        self.lastChecked = datetime.datetime.now()
+        
+    def save(self):
+        self.refresh() 
+        statsfile = open('stats.cfg', 'w')
+        pickle.dump(self, statsfile)
+        statsfile.close()
+
 
 if __name__ == "__main__":
     root = Tk()

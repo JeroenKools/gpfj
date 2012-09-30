@@ -9,10 +9,11 @@ from random import shuffle, choice, randint
 
 
 class Brain(Brain.Brain):
-    def __init__(self, army):
+    def __init__(self, game, army):
+        self.game = game
         self.army = army
 
-    def placeArmy(self, armyHeight, app, army):
+    def placeArmy(self, armyHeight):
         if (armyHeight>3):
             tactic = randint(1,4)
         else: 
@@ -32,7 +33,7 @@ class Brain(Brain.Brain):
         else:
             rows = range(BOARD_WIDTH - armyHeight, BOARD_WIDTH)
             backrow = BOARD_WIDTH
-            frontrow = BOARD_WIDTH - armyHeight + 1
+            frontrow = BOARD_WIDTH - armyHeight
             direction = -1
 
         for row in rows:
@@ -118,7 +119,7 @@ class Brain(Brain.Brain):
             posFlagCol = []
 
             for column in range(BOARD_WIDTH):
-                if positions.index((column, frontrow)) > 0 and app.isPool(column, frontrow + direction):
+                if positions.index((column, frontrow)) > 0 and self.game.isPool(column, frontrow + direction):
                     posFlagCol += [column]
 
             xpos = posFlagCol[randint(0, len(posFlagCol)-1)]
@@ -129,7 +130,7 @@ class Brain(Brain.Brain):
             bombPos += [(xpos, frontrow - direction)]
         ####################################################################################################################################
         ####################################################################################################################################
-           
+
         positions.remove(flagPos)
         for bp in bombPos:
             positions.remove(bp)
@@ -142,9 +143,9 @@ class Brain(Brain.Brain):
 
         # Scouts and bombs on front row and not behind the lakes:
         for column in range(BOARD_WIDTH):
-            if positions.__contains__((column, frontrow)) and not app.isPool(column, frontrow + direction):
+            if positions.__contains__((column, frontrow)) and not self.game.isPool(column, frontrow + direction):
                 bool = randint(0,1)
-                if bool == 0 and army.nr_of_bombs-len(bombPos) > 1:
+                if bool == 0 and self.army.nr_of_bombs-len(bombPos) > 1:
                     bombPos += [(column, frontrow)]
                 else:
                     scoutPos += [(column, frontrow)]
@@ -166,7 +167,7 @@ class Brain(Brain.Brain):
                     unit.position = (0, 3)
         pass
 
-    def findMove(self, gamestate):
+    def findMove(self):
         move = None
         order = range(len(self.army.army))
         shuffle(order)
@@ -197,7 +198,7 @@ class Brain(Brain.Brain):
                               direction[0] >= 0 and direction[0] < BOARD_WIDTH and
                               direction[1] >= 0 and direction[1] < BOARD_WIDTH and
                               not self.army.getUnit(direction[0], direction[1]) and
-                              gamestate.legalMove(unit, direction[0], direction[1])]
+                              self.game.legalMove(unit, direction[0], direction[1])]
 
                 if len(directions) >= 1:
                     move = choice(directions)
