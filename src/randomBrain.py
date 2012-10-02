@@ -6,7 +6,7 @@ Created on 29 jun. 2012
 
 import Brain
 from constants import *
-from random import shuffle, choice, randint
+from random import shuffle, choice
 
 class Brain(Brain.Brain):
     def __init__(self, game, army):
@@ -53,6 +53,8 @@ class Brain(Brain.Brain):
             else:
                 dist = [1]
 
+            directions = []
+
             for d in dist:
 
                 north = (col, row - d)
@@ -60,15 +62,15 @@ class Brain(Brain.Brain):
                 west = (col - d, row)
                 east = (col + d, row)
 
-                directions = [direction for direction in [north, south, west, east] if
+                directions += [direction for direction in [north, south, west, east] if
                               direction[0] >= 0 and direction[0] < BOARD_WIDTH and
                               direction[1] >= 0 and direction[1] < BOARD_WIDTH and
                               not self.army.getUnit(direction[0], direction[1]) and
                               self.game.legalMove(unit, direction[0], direction[1])]
 
-                if len(directions) >= 1:
-                    move = choice(directions)
-                    return ((col, row), move)
+            if len(directions) >= 1:
+                move = choice(directions)
+                return ((col, row), move)
 
         return (None, None) # no legal move - lost!
 
