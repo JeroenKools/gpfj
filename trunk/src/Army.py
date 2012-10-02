@@ -1,43 +1,43 @@
 from constants import *
 from Tkinter import PhotoImage
-from PIL import Image, ImageTk
+import Image, ImageTk
 
 class Army:
     ranks = ['marshal', 'general', 'colonel', 'major', 'captain',
              'lieutenant', 'sergeant', 'canDefuseBomb', 'scout', 'spy', 'bomb', 'flag']
 
-    def __init__(self, armyType="classical", color="Red", size = 40):
+    def __init__(self, armyType="classical", color="Red", size=40):
         """Represents a Stratego army as a list of Units."""
 
         self.armyType = armyType
         self.color = color
 
         if armyType == "classical":
-            self.army = [ 
+            self.army = [
                           Flag(),
                           Marshal(),
                           General(),
                           Colonel(), Colonel(),
                           Major(), Major(), Major(),
             ]
-            
+
             scaled = 0
-            rankDict = {Captain: 4/31.,
-                         Lieutenant: 4/31.,
-                         Sergeant: 4/31.,
-                         Miner: 5/31.,
-                         Scout: 8/31.}
-            
+            rankDict = {Captain: 4 / 31.,
+                         Lieutenant: 4 / 31.,
+                         Sergeant: 4 / 31.,
+                         Miner: 5 / 31.,
+                         Scout: 8 / 31.}
+
             for rank, nr in rankDict.items():
-                for i in range(int(round(nr*(size-9)))):
+                for i in range(int(round(nr * (size - 9)))):
                     self.army.append(rank())
                     scaled += 1
-                    
-            for i in range(size-scaled-9):
+
+            for i in range(size - scaled - 9):
                 self.army.append(Bomb())
-                
+
             self.army.append(Spy())
-            
+
         else:
             pass # TODO: add other army options
 
@@ -55,6 +55,25 @@ class Army:
             if unit.getPosition() == (x, y):
                 return unit
 
+    def highestAlive(self):
+        highest = 0
+        for unit in self.army:
+            if unit.rank > Marshal().rank: # ignore bombs and funny stuff
+                continue
+            if unit.alive and unit.rank > highest:
+                highest = unit.rank
+        return highest
+
+    def highestUnknown(self):
+        highest = 0
+        for unit in self.army:
+            if unit.rank > Marshal().rank: # ignore bombs and funny stuff
+                continue
+            if unit.alive and not unit.isKnown and unit.rank > highest:
+                highest = unit.rank
+        return highest
+
+
 class Unit:
     def __init__(self, position=None):
         self.position = position
@@ -65,11 +84,13 @@ class Unit:
         self.icon = ImageTk.PhotoImage(icon)
 
         self.walkFar = False        # scout ability
-        self.canKillMarshal = False   # spy ability
-        self.canDefuseBomb = False          # canDefuseBomb ability
+        self.canKillMarshal = False # spy ability
+        self.canDefuseBomb = False  # canDefuseBomb ability
         self.canMove = True
         self.alive = True
-        self.justAttacked = False
+        self.justAttacked = False   # enemy units who just attacked are revealed
+        self.hasMoved = False       # if a unit has moved, the AI remembers
+        self.isKnown = False          # whether the AI already knows this piece's rank 
 
     def getPosition(self):
         return self.position
@@ -90,7 +111,7 @@ class Unit:
 
     def getIcon(self):
         return self.icon
-    
+
     def getImage(self, size):
         img = Image.open("%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
         img = img.resize((2 * size, 2 * size), Image.BICUBIC)

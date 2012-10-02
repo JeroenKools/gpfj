@@ -6,8 +6,8 @@ Created on 28 jun. 2012
 '''
 
 GAME_NAME = 'Kindral'      # Kindral? Praetor?
-VERSION = 0.41              # Game version
-DEBUG = True              # If True, show enemy units' ranks (cheat/debug)
+VERSION = 0.42              # Game version
+DEBUG = False              # If True, show enemy units' ranks (cheat/debug)
 
 ## GRAPHICS ##
 ICON_DIR = 'uniticons'
@@ -36,6 +36,9 @@ SOUND_WIN = "90140__pierrecartoons1979__win3.wav"
 SOUND_LOSE = "73581__benboncan__sad-trombone.wav"
 SOUND_COMBAT = "27826__erdie__sword01.wav"
 SOUND_BOMB = "80401__steveygos93__explosion2.wav"
+SOUND_ARGH = "argh.wav"
+SOUND_LAUGH = "laugh.wav"
+SOUND_DEFUSE = "creak.wav"
 
 ## GAME PARAMS ##
 BOARD_WIDTH = 10        # Board size in tiles, classic Stratego value is 10, tested between 6 and 20. 
