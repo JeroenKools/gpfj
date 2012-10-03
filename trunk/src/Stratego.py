@@ -18,7 +18,6 @@ try:
 except: # not on Windows
     playSound = False
 
-
 from math import sin, pi
 import webbrowser
 import os
@@ -228,7 +227,17 @@ class Application:
         self.statsWindow.destroy()
 
     def help(self):
-        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
+        self.helpImage = Image.open("help.png")
+        self.helpImage = ImageTk.PhotoImage(self.helpImage)
+        self.helpWindow = Toplevel(width=400, height=640)
+        lblHelp = Label(self.helpWindow, image=self.helpImage)
+        lblHelp.grid(column=0, row=0, sticky="ew")
+
+        btnOK = Button(self.helpWindow, text="OK", command=self.closeHelp)
+        btnOK.grid(column=0, row=1, columnspan=2, ipadx=15, pady=8)
+
+    def closeHelp(self):
+        self.helpWindow.destroy()
 
     def visitWebsite(self):
         webbrowser.open("http://code.google.com/p/gpfj")
