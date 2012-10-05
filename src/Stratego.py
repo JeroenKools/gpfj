@@ -5,12 +5,13 @@ Developed for the course "Game Programming" at the University of Amsterdam
 2012
 '''
 
-from Army import Army
+from Army import Army, Icons
 from constants import *
 import Brain, randomBrain, SmartBrain, CarefulBrain
 
 from Tkinter import *
 import tkMessageBox
+import tkFileDialog
 import Image, ImageTk
 try:
     import winsound
@@ -33,6 +34,7 @@ class Application:
         self.blueBrain = eval(self.defaultBrainName)
         self.redBrain = 0
         self.blueBrainName = self.defaultBrainName
+        self.unitIcons = Icons()
 
         # Create menu bar
         menuBar = Menu(root)
@@ -146,10 +148,31 @@ class Application:
         self.setStatusBar("Place your army, or press 'p' for random placement")
 
     def loadGame(self):
-        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
+        loadFilename = tkFileDialog.askopenfilename(defaultextension=".sav",
+                                                    filetypes =  [('%s saves' % GAME_NAME, '.sav')],
+                                                      initialdir = os.getcwd())
+        with open(loadFilename, 'r') as f:
+            L = pickle.load(loadFilename)
+            BOARD_WIDTH = L[0]
+            self.blueArmy = L[1]
+            self.redArmy = L[2]
+            self.blueBrainName = L[3]
+            self.blueBrain = eval(self.blueBrainName)
+            self.braintypes["Blue"] = self.blueBrain
+            
+            self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy) if self.braintypes["Blue"] else 0,
+                           "Red": self.braintypes["Red"].Brain(self, self.redArmy) if self.braintypes["Red"] else 0}
+            # TODO: finish
 
     def saveGame(self):
-        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), "To be implemented!")
+        saveFilename = tkFileDialog.asksaveasfilename(defaultextension=".sav",
+                                                      filetypes = [('%s saves' % GAME_NAME, '.sav')],
+                                                      initialdir = os.getcwd())
+        if saveFilename:
+            with open(saveFilename, 'w') as f:
+                pickle.dump([BOARD_WIDTH, self.blueArmy, self.redArmy, self.blueBrainName,
+                             self.turn, self.won],f)
+            self.setStatusBar("Game saved")
 
     def settings(self):
         self.settingsWindow = Toplevel(width=300)
@@ -161,16 +184,35 @@ class Application:
         self.blueBrainVar.set(self.blueBrainName)
         lblBrain.grid(column=0, row=0, sticky="ew", ipadx=10, ipady=10)
         mnuBrain.grid(column=1, row=0, sticky="ew", padx=10)
+        
+        lblDebug = Label(self.settingsWindow, text = "Debug")
+        self.debugVar = StringVar(self.settingsWindow)
+        mnuDebug = OptionMenu(self.settingsWindow, self.debugVar, "True", "False")
+        mnuDebug.config(width=20)
+        self.debugVar.set(str(DEBUG))
+        lblDebug.grid(column=0, row=1, sticky="ew", ipadx=10, ipady=10)
+        mnuDebug.grid(column=1, row=1, sticky="ew", padx=10)
 
         btnOK = Button(self.settingsWindow, text="OK", command=self.updateSettings)
-        btnOK.grid(column=0, row=1, columnspan=2, ipadx=15, pady=8)
+        btnOK.grid(column=0, row=2, columnspan=2, ipadx=15, pady=8)
 
     def updateSettings(self):
-        self.blueBrainName = self.blueBrainVar.get()
-        self.blueBrain = eval(self.blueBrainName)
-        self.setStatusBar("Selected " + self.blueBrainName)
+        global DEBUG
+        newBlueBrainName = self.blueBrainVar.get()
+        DEBUG = (self.debugVar.get() == "True")
+        self.drawMap()
+        
+        if newBlueBrainName != self.blueBrainName:       
+            if tkMessageBox.askyesno("Changed settings", 
+                                 "The new Brain is only used when you start a new game. \n"+
+                                 "Do you want to start a new game now?"):
+                self.blueBrainName = newBlueBrainName
+                self.blueBrain = eval(self.blueBrainName)
+                self.newGame()
+                self.setStatusBar("Selected " + self.blueBrainName)
+                
         self.settingsWindow.destroy()
-        self.newGame()
+        
 
     def loadStats(self):
         if os.path.exists('stats.cfg'):
@@ -215,7 +257,7 @@ class Application:
                          %i
                          
                          %s""" % (self.stats.gamesPlayed, self.stats.gamesWon, self.stats.gamesLost,
-                                  100 * self.stats.gamesWon / max(1, self.stats.gamesPlayed),
+                                  100. * self.stats.gamesWon / max(1, self.stats.gamesPlayed),
                                   self.stats.longestStreak,
                                   0, timestr))
         lblStats.grid(column=1, row=0, sticky="ew", ipadx=35, ipady=10)
@@ -351,7 +393,8 @@ class Application:
 
         if unit.color == "Red" or DEBUG or not unit.alive or self.won or unit.justAttacked:
             unit.justAttacked = False
-            canvas.create_image(x * TILE_PIX, y * TILE_PIX, image=unit.getIcon(), anchor=NW)
+            canvas.create_image(x * TILE_PIX, y * TILE_PIX, 
+                                image=self.unitIcons.getIcon(unit.name), anchor=NW)
             if unit.name != "Bomb" and unit.name != "Flag":
                 canvas.create_text(((x + .2) * TILE_PIX, (y + .8) * TILE_PIX),
                                    text=unit.rank, fill=MOVE_ARROW_COLOR)
@@ -624,12 +667,12 @@ class Application:
             top.title("Battle result")
             top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
 
-            atkImg = ImageTk.PhotoImage(attacker.getImage(120))
+            atkImg = ImageTk.PhotoImage(self.unitIcons.getImage(attacker.name, 120))
             atkLbl = Label(top, image=atkImg)
             atkLbl.image = atkImg
             atkLbl.grid(row=0, column=0, sticky=NW)
 
-            defImg = ImageTk.PhotoImage(defender.getImage(120))
+            defImg = ImageTk.PhotoImage(self.unitIcons.getImage(defender.name, 120))
             defLbl = Label(top, image=defImg)
             defLbl.image = defImg
 
@@ -783,10 +826,8 @@ class Stats:
 
     def save(self):
         self.refresh()
-        statsfile = open('stats.cfg', 'w')
-        pickle.dump(self, statsfile)
-        statsfile.close()
-
+        with open('stats.cfg', 'w') as f:
+            pickle.dump(self, f)
 
 if __name__ == "__main__":
     root = Tk()

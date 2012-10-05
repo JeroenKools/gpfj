@@ -77,11 +77,6 @@ class Army:
 class Unit:
     def __init__(self, position=None):
         self.position = position
-        icon = Image.open("%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
-        #self.icon = PhotoImage(file="%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
-        icon = icon.resize((2 * TILE_PIX, 2 * TILE_PIX), Image.BICUBIC)
-        icon = icon.resize((TILE_PIX, TILE_PIX), Image.ANTIALIAS)
-        self.icon = ImageTk.PhotoImage(icon)
 
         self.walkFar = False        # scout ability
         self.canKillMarshal = False # spy ability
@@ -108,16 +103,7 @@ class Unit:
     def die(self):
         self.alive = False
         self.position = None
-
-    def getIcon(self):
-        return self.icon
-
-    def getImage(self, size):
-        img = Image.open("%s/%s.%s" % (ICON_DIR, self.name, ICON_TYPE))
-        img = img.resize((2 * size, 2 * size), Image.BICUBIC)
-        img = img.resize((size, size), Image.ANTIALIAS)
-        return img
-
+        
     def isMovable(self):
         return self.canMove
 
@@ -126,6 +112,25 @@ class Unit:
             return "%s at %s" % (self.name, self.position)
         else:
             return "Off-board %s" % (self.name)
+        
+class Icons:
+    def __init__(self):
+        self.icons = {}
+        for rank in ['Marshal', 'General', 'Colonel', 'Major', 'Captain', 'Lieutenant',
+                     'Sergeant', 'Miner', 'Scout', 'Bomb', 'Spy', 'Flag']:
+            icon = Image.open("%s/%s.%s" % (ICON_DIR, rank, ICON_TYPE))
+            icon = icon.resize((2 * TILE_PIX, 2 * TILE_PIX), Image.BICUBIC)
+            icon = icon.resize((TILE_PIX, TILE_PIX), Image.ANTIALIAS)
+            self.icons[rank] = ImageTk.PhotoImage(icon)
+            
+    def getIcon(self, rank):
+        return self.icons[rank]
+    
+    def getImage(self, rank, size):   
+        img = Image.open("%s/%s.%s" % (ICON_DIR, rank, ICON_TYPE))
+        img = img.resize((2 * size, 2 * size), Image.BICUBIC)
+        img = img.resize((size, size), Image.ANTIALIAS)
+        return img     
 
 class Marshal(Unit):
     def __init__(self, position=None):
