@@ -151,18 +151,24 @@ class Application:
         loadFilename = tkFileDialog.askopenfilename(defaultextension=".sav",
                                                     filetypes =  [('%s saves' % GAME_NAME, '.sav')],
                                                       initialdir = os.getcwd())
-        with open(loadFilename, 'r') as f:
-            L = pickle.load(loadFilename)
-            BOARD_WIDTH = L[0]
-            self.blueArmy = L[1]
-            self.redArmy = L[2]
-            self.blueBrainName = L[3]
-            self.blueBrain = eval(self.blueBrainName)
-            self.braintypes["Blue"] = self.blueBrain
-            
-            self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy) if self.braintypes["Blue"] else 0,
-                           "Red": self.braintypes["Red"].Brain(self, self.redArmy) if self.braintypes["Red"] else 0}
-            # TODO: finish
+        if loadFilename:
+            with open(loadFilename, 'r') as f:
+                save = pickle.load(f)
+                BOARD_WIDTH = save['BOARD_WIDTH']
+                self.blueArmy = save['self.blueArmy']
+                self.redArmy = save['self.redArmy']
+                self.blueBrainName = save['self.blueBrainName']
+                self.blueBrain = eval(self.blueBrainName)
+                self.braintypes["Blue"] = self.blueBrain
+                self.turn = save['self.turn']
+                self.won = save['self.won']
+                self.started = save['self.started']
+
+                self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy) if self.braintypes["Blue"] else 0,
+                               "Red": self.braintypes["Red"].Brain(self, self.redArmy) if self.braintypes["Red"] else 0}
+                self.drawMap()
+                self.drawSidePanels()
+                self.setStatusBar("Game loaded!")
 
     def saveGame(self):
         saveFilename = tkFileDialog.asksaveasfilename(defaultextension=".sav",
@@ -170,8 +176,15 @@ class Application:
                                                       initialdir = os.getcwd())
         if saveFilename:
             with open(saveFilename, 'w') as f:
-                pickle.dump([BOARD_WIDTH, self.blueArmy, self.redArmy, self.blueBrainName,
-                             self.turn, self.won],f)
+                pickle.dump({'BOARD_WIDTH': BOARD_WIDTH,
+                             'self.blueArmy': self.blueArmy,
+                             'self.redArmy': self.redArmy,
+                             'self.blueBrainName': self.blueBrainName,
+                             'self.turn': self.turn,
+                             'self.won': self.won,
+                             'self.started': self.started
+                             },
+                             f)
             self.setStatusBar("Game saved")
 
     def settings(self):
@@ -204,8 +217,8 @@ class Application:
         
         if newBlueBrainName != self.blueBrainName:       
             if tkMessageBox.askyesno("Changed settings", 
-                                 "The new Brain is only used when you start a new game. \n"+
-                                 "Do you want to start a new game now?"):
+                                 "To change the opponent type, you must start a new game \n" +
+                                 "Are you sure?"):
                 self.blueBrainName = newBlueBrainName
                 self.blueBrain = eval(self.blueBrainName)
                 self.newGame()
@@ -828,6 +841,7 @@ class Stats:
         self.refresh()
         with open('stats.cfg', 'w') as f:
             pickle.dump(self, f)
+
 
 if __name__ == "__main__":
     root = Tk()
