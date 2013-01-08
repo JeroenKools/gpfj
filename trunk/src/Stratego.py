@@ -7,17 +7,23 @@ Developed for the course "Game Programming" at the University of Amsterdam
 
 from Army import Army, Icons
 from constants import *
-import Brain, randomBrain, SmartBrain, CarefulBrain
+import randomBrain, SmartBrain, CarefulBrain
 
 from Tkinter import *
 import tkMessageBox
 import tkFileDialog
+import tkFont
 import Image, ImageTk
 try:
     import winsound
-    playSound = True
+    canPlaySound = True
 except: # not on Windows
-    playSound = False
+    canPlaySound = False
+try:
+    import mp3play
+    canPlayMusic = True
+except:
+    canPlayMusic = False
 
 from math import sin, pi
 import webbrowser
@@ -25,15 +31,15 @@ import os
 import pickle
 import datetime
 from textwrap import fill, dedent, TextWrapper
-
+from random import randint, choice
+import time
 
 class Application:
-    def __init__(self, root):
+    def __init__(self, root, brain = "SmartBrain"):
         self.root = root
-        self.defaultBrainName = "SmartBrain" # Brain used for the first game, can be changed in settings
-        self.blueBrain = eval(self.defaultBrainName)
+        self.blueBrain = eval(brain)
         self.redBrain = 0
-        self.blueBrainName = self.defaultBrainName
+        self.blueBrainName = brain
         self.unitIcons = Icons()
 
         # Create menu bar
@@ -50,6 +56,9 @@ class Application:
         optionMenu = Menu(menuBar, tearoff=0)
         optionMenu.add_command(label="Settings", command=self.settings)
         optionMenu.add_command(label="Statistics", command=self.showStats)
+        self.soundOn = BooleanVar()
+        optionMenu.add_checkbutton(label="Sound effects", onvalue=True, offvalue=False, variable = self.soundOn)
+        self.soundOn.set(True)
         menuBar.add_cascade(label="Options", menu=optionMenu)
 
         helpmenu = Menu(menuBar, tearoff=0)
@@ -304,12 +313,19 @@ class Application:
         for the course 'Game Programming' at the University of Amsterdam in 2012.
         """ % GAME_NAME
 
-        p2 = """\
-        The game is inspired by the classic board game Stratego (copyright Hasbro). 
-        Sounds by pierrecartoons1979, steveygos93, Erdie and benboncan at freesounds.org 
-        """
+        p2 = """The game is inspired by the classic board game Stratego (copyright Hasbro).""" 
+        
+        p3 = """
+        Sound effects by pierrecartoons1979, steveygos93, Erdie and benboncan
+        (Creative Commons at freesounds.org)"""
+        
+        p4 = """
+        Music by the United States Army Old Guard Fife And Drum Corps 
+        (Public domain, available at freemusicarchive.org)"""
 
-        text = wrapper.fill(dedent(p1)) + "\n\n" + wrapper.fill(dedent(p2))
+        text = wrapper.fill(dedent(p1)) + "\n\n" +\
+                "CREDITS:\n\n" + wrapper.fill(dedent(p2)) +\
+                "\n\n" + wrapper.fill(dedent(p3)) + "\n\n" + wrapper.fill(dedent(p4))
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), text)
 
     def setStatusBar(self, newText):
@@ -320,9 +336,6 @@ class Application:
     def drawMap(self):
         """Draw the tiles and units on the map."""
         self.map.delete(ALL)
-
-        # fill entire map with green
-        #self.map.create_rectangle(0, 0, self.boardsize, self.boardsize, fill=GRASS_COLOR)
         self.map.create_image(0, 0, image=self.grassImage, anchor=NW)
 
         # draw water
@@ -330,7 +343,6 @@ class Application:
             for y in range(BOARD_WIDTH):
                 if self.isPool(x, y):
                     self.map.create_image(x * TILE_PIX, y * TILE_PIX, image=self.waterImage, anchor=NW)
-                    #self.drawTile(x, y, WATER_COLOR)
 
         # draw lines
         for i in range(BOARD_WIDTH - 1):
@@ -785,14 +797,14 @@ class Application:
 
         message.configure(width=40, justify=CENTER, wraplength=150)
         self.setStatusBar("%s has won the game!" % color)
-        if playSound:
-            if color == "Red":
-                self.playSound(SOUND_WIN)
-            else:
-                self.playSound(SOUND_LOSE)
+        if color == "Red":
+            self.playSound(SOUND_WIN)
+        else:
+            self.playSound(SOUND_LOSE)
 
     def playSound(self, name):
-        winsound.PlaySound("%s/%s" % (SOUND_DIR, name),
+        if canPlaySound and self.soundOn.get():
+            winsound.PlaySound("%s/%s" % (SOUND_DIR, name),
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
 
     def quickplace(self, event):
@@ -841,11 +853,80 @@ class Stats:
         self.refresh()
         with open('stats.cfg', 'w') as f:
             pickle.dump(self, f)
-
-
+            
+class Launcher():
+    def __init__(self, root):
+        # TODO: music?
+        self.root = root
+        self.top = Toplevel(root,width=1024, height=600, bd=1)
+        self.top.minsize(900,635)
+        self.top.geometry("+50+50")
+        self.top.title("%s v%s" % (GAME_NAME, VERSION))
+        self.top.bind("<Escape>", self.exit)
+        self.top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+        
+        self.bgid = 0
+        self.textid = 0
+        self.backgrounds = len([x for x in os.listdir("backgrounds") if "background" in x ])
+        self.bgcanvas = Canvas(self.top, width=900, height=600, bd=0)
+        self.bgcanvas.grid(row=0,column=0, columnspan=6)
+        self.titleFont = tkFont.Font(family="Times", size=64, slant = tkFont.ITALIC, weight = tkFont.BOLD)
+        self.newBackground()
+        self.playMusic()
+        
+        Label(self.top, width=20).grid(row=1, column=0, sticky=W+E)
+        
+        self.playbutton = Button(self.top, text="Play", width=10, padx=20, command=self.startGame)
+        self.playbutton.grid(row=1,column=1, padx=10, pady=5, sticky=E)
+        
+        self.exitbutton = Button(self.top, text="Exit", width=10, padx=20, command=self.exit)
+        self.exitbutton.grid(row=1,column=2, padx=10, pady=5, sticky=E)
+        
+        lblBrain = Label(self.top, text="Opponent:")
+        self.blueBrainVar = StringVar(self.top)
+        mnuBrain = OptionMenu(self.top, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
+        mnuBrain.config(width=20)
+        self.blueBrainVar.set("SmartBrain")
+        lblBrain.grid(column=3, row=1, sticky="ew", ipadx=6, ipady=2)
+        mnuBrain.grid(column=4, row=1, sticky="ew", padx=6)       
+        
+        Label(self.top, width=20).grid(row=1, column=5, sticky=W+E)         
+        
+    def startGame(self):
+        self.top.destroy()
+        Application(self.root, self.blueBrainVar.get())
+        self.root.update()
+        self.root.deiconify()
+        
+    def newBackground(self):
+        self.bgcanvas.delete(self.bgid)
+        self.bgcanvas.delete(self.textid)
+        i = str(randint(1, self.backgrounds))
+        im = Image.open("backgrounds/background"+i+".jpg").resize((900,600))
+        self.bgim = ImageTk.PhotoImage(im)
+        self.bgid = self.bgcanvas.create_image(0, 0, image=self.bgim, anchor=NW)
+        self.textid = self.bgcanvas.create_text((200,80), text = GAME_NAME, font = self.titleFont)
+        self.top.after(10000, self.newBackground)
+        
+    def playMusic(self):
+        if canPlayMusic:
+            tracks = os.listdir("music")
+            track = choice(tracks)
+            print track
+            clip = mp3play.load("music/"+track)
+            print clip, clip.milliseconds()
+            clip.play()
+            print "playing?!"
+            time.sleep(.5) # TODO: fix music playback!!!
+            self.top.after(clip.milliseconds(), self.playMusic)
+        
+    def exit(self, event=None):
+        self.root.quit()
+        
 if __name__ == "__main__":
     root = Tk()
-    Application(root)
+    root.withdraw()
+    Launcher(root)
     root.title("%s %s" % (GAME_NAME, VERSION))
     root.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
     root.mainloop()
