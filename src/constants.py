@@ -5,8 +5,8 @@ Created on 28 jun. 2012
 @author: Jeroen Kools and Fedde Burgers
 '''
 
-GAME_NAME = 'Kindral'      # Kindral? Praetor?
-VERSION = 0.42              # Game version
+GAME_NAME = 'Kindral'      # Kindral? Praetor? Napoleon?
+VERSION = 0.43             # Game version
 DEBUG = False              # If True, show enemy units' ranks (cheat/debug)
 
 ## GRAPHICS ##
