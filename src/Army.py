@@ -114,13 +114,13 @@ class Unit:
             return "Off-board %s" % (self.name)
         
 class Icons:
-    def __init__(self):
+    def __init__(self, tilepix):
         self.icons = {}
         for rank in ['Marshal', 'General', 'Colonel', 'Major', 'Captain', 'Lieutenant',
                      'Sergeant', 'Miner', 'Scout', 'Bomb', 'Spy', 'Flag']:
             icon = Image.open("%s/%s.%s" % (ICON_DIR, rank, ICON_TYPE))
-            icon = icon.resize((2 * TILE_PIX, 2 * TILE_PIX), Image.BICUBIC)
-            icon = icon.resize((TILE_PIX, TILE_PIX), Image.ANTIALIAS)
+            icon = icon.resize((2 * tilepix, 2 * tilepix), Image.BICUBIC)
+            icon = icon.resize((tilepix, tilepix), Image.ANTIALIAS)
             self.icons[rank] = ImageTk.PhotoImage(icon)
             
     def getIcon(self, rank):

@@ -7,11 +7,15 @@ import Brain
 from constants import *
 from random import shuffle, choice, randint
 
+BOARD_WIDTH = 0
 
 class Brain(Brain.Brain):
-    def __init__(self, game, army):
+    def __init__(self, game, army, boardwidth=None):
         self.game = game
         self.army = army
+
+        global BOARD_WIDTH
+        if boardwidth: BOARD_WIDTH = boardwidth
 
     def placeArmy(self, armyHeight):
         if (armyHeight>3):

@@ -5,13 +5,17 @@ Created on 29 jun. 2012
 '''
 
 import Brain
-from constants import *
 from random import shuffle, choice
 
+BOARD_WIDTH = 0
+
 class Brain(Brain.Brain):
-    def __init__(self, game, army):
+    def __init__(self, game, army, boardwidth=None):
         self.army = army
         self.game = game
+
+        global BOARD_WIDTH
+        if boardwidth: BOARD_WIDTH = boardwidth
 
     def placeArmy(self, armyHeight):
 

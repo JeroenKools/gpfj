@@ -35,18 +35,25 @@ from random import randint, choice
 import time
 
 class Application:
-    def __init__(self, root, brain = "SmartBrain"):
+    def __init__(self, root, brain="SmartBrain", difficulty="Normal", size="Normal"):
         self.root = root
         self.blueBrain = eval(brain)
         self.redBrain = 0
         self.blueBrainName = brain
-        self.unitIcons = Icons()
+        self.difficulty = difficulty
+
+        global BOARD_WIDTH, POOLS, TILE_PIX
+        BOARD_WIDTH = SIZE_DICT[size][0]
+        POOLS = SIZE_DICT[size][1]
+        TILE_PIX = SIZE_DICT[size][2]
+
+        self.unitIcons = Icons(TILE_PIX)
 
         # Create menu bar
         menuBar = Menu(root)
 
         fileMenu = Menu(menuBar, tearoff=0)
-        fileMenu.add_command(label="New Game", command=self.newGame)
+        fileMenu.add_command(label="New Game", command=self.confirmNewGame)
         fileMenu.add_command(label="Load Game", command=self.loadGame)
         fileMenu.add_command(label="Save Game", command=self.saveGame)
         fileMenu.add_separator()
@@ -57,12 +64,12 @@ class Application:
         optionMenu.add_command(label="Settings", command=self.settings)
         optionMenu.add_command(label="Statistics", command=self.showStats)
         self.soundOn = BooleanVar()
-        optionMenu.add_checkbutton(label="Sound effects", onvalue=True, offvalue=False, variable = self.soundOn)
+        optionMenu.add_checkbutton(label="Sound effects", onvalue=True, offvalue=False, variable=self.soundOn)
         self.soundOn.set(True)
         menuBar.add_cascade(label="Options", menu=optionMenu)
 
         helpmenu = Menu(menuBar, tearoff=0)
-        helpmenu.add_command(label="Help", command=self.help)
+        helpmenu.add_command(label="Help", command=self.helpMe)
         helpmenu.add_command(label="Visit Website", command=self.visitWebsite)
         helpmenu.add_command(label="About", command=self.about)
         menuBar.add_cascade(label="Help", menu=helpmenu)
@@ -71,7 +78,7 @@ class Application:
 
         # Create toolbar        
         toolbar = Frame(root)
-        Button(toolbar, text="New", width=6, command=self.newGame).pack(side=LEFT, padx=2, pady=2)
+        Button(toolbar, text="New", width=6, command=self.confirmNewGame).pack(side=LEFT, padx=2, pady=2)
         Button(toolbar, text="Load", width=6, command=self.loadGame).pack(side=LEFT, padx=2, pady=2)
         Button(toolbar, text="Save", width=6, command=self.saveGame).pack(side=LEFT, padx=2, pady=2)
         Button(toolbar, text="Settings", width=6, command=self.settings).pack(side=LEFT, padx=2, pady=2)
@@ -123,8 +130,15 @@ class Application:
         self.loadStats()
         self.newGame()
 
-    def newGame(self):
-        # TODO: lose ongoing game confirmation  
+    def confirmNewGame(self, event=None):
+        if self.started and (not self.won) and tkMessageBox.askyesno("Confirm new game",
+            "If you start a new game, your current game will be lost. Are you sure?"):
+                self.newGame()
+
+        if self.won:
+            self.newGame()
+
+    def newGame(self, event=None):
 
         # interaction vars
         self.clickedUnit = None
@@ -140,8 +154,8 @@ class Application:
                            "Red": self.redBrain}
         self.blueArmy = Army("classical", "Blue", BOARD_WIDTH * self.armyHeight)
         self.redArmy = Army("classical", "Red", BOARD_WIDTH * self.armyHeight)
-        self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy) if self.braintypes["Blue"] else 0,
-                           "Red": self.braintypes["Red"].Brain(self, self.redArmy) if self.braintypes["Red"] else 0}
+        self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy, BOARD_WIDTH) if self.braintypes["Blue"] else 0,
+                           "Red": self.braintypes["Red"].Brain(self, self.redArmy, BOARD_WIDTH) if self.braintypes["Red"] else 0}
 
         if self.brains["Blue"]:
             self.brains["Blue"].placeArmy(self.armyHeight)
@@ -158,8 +172,8 @@ class Application:
 
     def loadGame(self):
         loadFilename = tkFileDialog.askopenfilename(defaultextension=".sav",
-                                                    filetypes =  [('%s saves' % GAME_NAME, '.sav')],
-                                                      initialdir = os.getcwd())
+                                                    filetypes=[('%s saves' % GAME_NAME, '.sav')],
+                                                      initialdir=os.getcwd())
         if loadFilename:
             with open(loadFilename, 'r') as f:
                 save = pickle.load(f)
@@ -173,16 +187,16 @@ class Application:
                 self.won = save['self.won']
                 self.started = save['self.started']
 
-                self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy) if self.braintypes["Blue"] else 0,
-                               "Red": self.braintypes["Red"].Brain(self, self.redArmy) if self.braintypes["Red"] else 0}
+                self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy, BOARD_WIDTH) if self.braintypes["Blue"] else 0,
+                               "Red": self.braintypes["Red"].Brain(self, self.redArmy, BOARD_WIDTH) if self.braintypes["Red"] else 0}
                 self.drawMap()
                 self.drawSidePanels()
                 self.setStatusBar("Game loaded!")
 
     def saveGame(self):
         saveFilename = tkFileDialog.asksaveasfilename(defaultextension=".sav",
-                                                      filetypes = [('%s saves' % GAME_NAME, '.sav')],
-                                                      initialdir = os.getcwd())
+                                                      filetypes=[('%s saves' % GAME_NAME, '.sav')],
+                                                      initialdir=os.getcwd())
         if saveFilename:
             with open(saveFilename, 'w') as f:
                 pickle.dump({'BOARD_WIDTH': BOARD_WIDTH,
@@ -199,6 +213,7 @@ class Application:
     def settings(self):
         self.settingsWindow = Toplevel(width=300)
 
+        # OPPONENT
         lblBrain = Label(self.settingsWindow, text="Opponent Brain")
         self.blueBrainVar = StringVar(self.settingsWindow)
         mnuBrain = OptionMenu(self.settingsWindow, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
@@ -206,35 +221,45 @@ class Application:
         self.blueBrainVar.set(self.blueBrainName)
         lblBrain.grid(column=0, row=0, sticky="ew", ipadx=10, ipady=10)
         mnuBrain.grid(column=1, row=0, sticky="ew", padx=10)
-        
-        lblDebug = Label(self.settingsWindow, text = "Debug")
+
+        # DIFFICULTY
+        lblDifficulty = Label(self.settingsWindow, text="Difficulty")
+        self.difficultyVar = StringVar(self.settingsWindow)
+        mnuDifficulty = OptionMenu(self.settingsWindow, self.difficultyVar, "Normal") # TODO: difficulty
+        mnuDifficulty.config(width=20)
+        self.difficultyVar.set(self.difficulty)
+        lblDifficulty.grid(column=0, row=1, sticky="ew", ipadx=10, ipady=10)
+        mnuDifficulty.grid(column=1, row=1, sticky="ew", padx=10)
+
+        # DEBUG
+        lblDebug = Label(self.settingsWindow, text="Debug")
         self.debugVar = StringVar(self.settingsWindow)
         mnuDebug = OptionMenu(self.settingsWindow, self.debugVar, "True", "False")
         mnuDebug.config(width=20)
         self.debugVar.set(str(DEBUG))
-        lblDebug.grid(column=0, row=1, sticky="ew", ipadx=10, ipady=10)
-        mnuDebug.grid(column=1, row=1, sticky="ew", padx=10)
+        lblDebug.grid(column=0, row=2, sticky="ew", ipadx=10, ipady=10)
+        mnuDebug.grid(column=1, row=2, sticky="ew", padx=10)
 
         btnOK = Button(self.settingsWindow, text="OK", command=self.updateSettings)
-        btnOK.grid(column=0, row=2, columnspan=2, ipadx=15, pady=8)
+        btnOK.grid(column=0, row=3, columnspan=2, ipadx=15, pady=8)
 
     def updateSettings(self):
         global DEBUG
         newBlueBrainName = self.blueBrainVar.get()
         DEBUG = (self.debugVar.get() == "True")
         self.drawMap()
-        
-        if newBlueBrainName != self.blueBrainName:       
-            if tkMessageBox.askyesno("Changed settings", 
+
+        if newBlueBrainName != self.blueBrainName:
+            if tkMessageBox.askyesno("Changed settings",
                                  "To change the opponent type, you must start a new game \n" +
                                  "Are you sure?"):
                 self.blueBrainName = newBlueBrainName
                 self.blueBrain = eval(self.blueBrainName)
                 self.newGame()
                 self.setStatusBar("Selected " + self.blueBrainName)
-                
+
         self.settingsWindow.destroy()
-        
+
 
     def loadStats(self):
         if os.path.exists('stats.cfg'):
@@ -290,7 +315,8 @@ class Application:
     def closeStats(self):
         self.statsWindow.destroy()
 
-    def help(self):
+    def helpMe(self):
+        #TODO: Give more info about game rules, depending on phase (placement or actual game) 
         self.helpImage = Image.open("help.png")
         self.helpImage = ImageTk.PhotoImage(self.helpImage)
         self.helpWindow = Toplevel(width=400, height=640)
@@ -304,27 +330,27 @@ class Application:
         self.helpWindow.destroy()
 
     def visitWebsite(self):
-        webbrowser.open("http://code.google.com/p/gpfj")
+        webbrowser.open(URL)
 
     def about(self):
         wrapper = TextWrapper(width=60)
         p1 = """\
-        %s is a game developed by Jeroen Kools and Fedde Burgers
+        %s is a game developed by %s
         for the course 'Game Programming' at the University of Amsterdam in 2012.
-        """ % GAME_NAME
+        """ % (GAME_NAME, AUTHORS)
 
-        p2 = """The game is inspired by the classic board game Stratego (copyright Hasbro).""" 
-        
+        p2 = """The game is inspired by the classic board game Stratego (copyright Hasbro)."""
+
         p3 = """
         Sound effects by pierrecartoons1979, steveygos93, Erdie and benboncan
         (Creative Commons at freesounds.org)"""
-        
+
         p4 = """
         Music by the United States Army Old Guard Fife And Drum Corps 
         (Public domain, available at freemusicarchive.org)"""
 
-        text = wrapper.fill(dedent(p1)) + "\n\n" +\
-                "CREDITS:\n\n" + wrapper.fill(dedent(p2)) +\
+        text = wrapper.fill(dedent(p1)) + "\n\n" + \
+                "CREDITS:\n\n" + wrapper.fill(dedent(p2)) + \
                 "\n\n" + wrapper.fill(dedent(p3)) + "\n\n" + wrapper.fill(dedent(p4))
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), text)
 
@@ -418,7 +444,7 @@ class Application:
 
         if unit.color == "Red" or DEBUG or not unit.alive or self.won or unit.justAttacked:
             unit.justAttacked = False
-            canvas.create_image(x * TILE_PIX, y * TILE_PIX, 
+            canvas.create_image(x * TILE_PIX, y * TILE_PIX,
                                 image=self.unitIcons.getIcon(unit.name), anchor=NW)
             if unit.name != "Bomb" and unit.name != "Flag":
                 canvas.create_text(((x + .2) * TILE_PIX, (y + .8) * TILE_PIX),
@@ -458,9 +484,9 @@ class Application:
         y = event.y / TILE_PIX
 
         if self.isPool(x, y):
-            type = 'water'
+            terrain = 'water'
         else:
-            type = 'land'
+            terrain = 'land'
 
         if self.placingUnit:
             self.placeUnit(x, y)
@@ -486,7 +512,7 @@ class Application:
             else:
                 unit = "no unit at (%s, %s)" % (x, y)
 
-            self.setStatusBar("You clicked a %s tile with %s" % (type, unit))
+            self.setStatusBar("You clicked a %s tile with %s" % (terrain, unit))
 
     def placeUnit(self, x, y):
         if self.isPool(x, y):
@@ -497,9 +523,10 @@ class Application:
             self.setStatusBar("Can't place %s there, spot already taken!" % self.clickedUnit.name)
             return
 
-        if y < (BOARD_WIDTH - 4): #TODO: fix for other than standard sizes
-            self.setStatusBar("Must place unit in the first 4 rows")
+        if y < (BOARD_WIDTH - self.armyHeight):
+            self.setStatusBar("Must place unit in the first %i rows" % self.armyHeight)
             return
+
 
         self.clickedUnit.setPosition(x, y)
         self.setStatusBar("Placed %s" % self.clickedUnit)
@@ -581,7 +608,7 @@ class Application:
                 unit.setPosition(move[0], move[1])
 
             # check if player can move
-            tempBrain = randomBrain.Brain(self, self.redArmy)
+            tempBrain = randomBrain.Brain(self, self.redArmy, BOARD_WIDTH)
             playerMove = tempBrain.findMove()
             if playerMove[0] == None:
                 self.victory(self.turn, True)
@@ -809,7 +836,7 @@ class Application:
 
     def quickplace(self, event):
         if not self.started:
-            tempBrain = randomBrain.Brain(self, self.redArmy)
+            tempBrain = randomBrain.Brain(self, self.redArmy, BOARD_WIDTH)
             tempBrain.placeArmy(self.armyHeight)
 
             self.drawMap()
@@ -853,76 +880,102 @@ class Stats:
         self.refresh()
         with open('stats.cfg', 'w') as f:
             pickle.dump(self, f)
-            
+
 class Launcher():
     def __init__(self, root):
-        # TODO: music?
         self.root = root
-        self.top = Toplevel(root,width=1024, height=600, bd=1)
-        self.top.minsize(900,635)
+        self.top = Toplevel(root, width=1024, height=600, bd=1)
+        self.top.minsize(900, 675)
+        self.top.maxsize(900, 675)
         self.top.geometry("+50+50")
         self.top.title("%s v%s" % (GAME_NAME, VERSION))
         self.top.bind("<Escape>", self.exit)
         self.top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
-        
+
+        Label(self.top).grid()
+
         self.bgid = 0
         self.textid = 0
         self.backgrounds = len([x for x in os.listdir("backgrounds") if "background" in x ])
         self.bgcanvas = Canvas(self.top, width=900, height=600, bd=0)
-        self.bgcanvas.grid(row=0,column=0, columnspan=6)
-        self.titleFont = tkFont.Font(family="Times", size=64, slant = tkFont.ITALIC, weight = tkFont.BOLD)
+        self.bgcanvas.place(x=0, y=0)
+        self.titleFont = tkFont.Font(family="Times", size=64, slant=tkFont.ITALIC, weight=tkFont.BOLD, underline=True)
+        self.subtitleFont = tkFont.Font(family="Helvetica", size=14, weight=tkFont.BOLD)
         self.newBackground()
         self.playMusic()
-        
-        Label(self.top, width=20).grid(row=1, column=0, sticky=W+E)
-        
+
         self.playbutton = Button(self.top, text="Play", width=10, padx=20, command=self.startGame)
-        self.playbutton.grid(row=1,column=1, padx=10, pady=5, sticky=E)
-        
+        self.playbutton.grid(row=1, column=0, padx=10, pady=5, sticky=W)
+
+        self.loadButton = Button(self.top, text="Load", width=10, padx=20, command=self.loadGame)
+        self.loadButton.grid(row=2, column=0, padx=10, pady=5, sticky=W)
+
         self.exitbutton = Button(self.top, text="Exit", width=10, padx=20, command=self.exit)
-        self.exitbutton.grid(row=1,column=2, padx=10, pady=5, sticky=E)
-        
-        lblBrain = Label(self.top, text="Opponent:")
+        self.exitbutton.grid(row=2, column=5, padx=10, pady=5, sticky=E)
+
+        lblBrain = Label(self.top, text="Opponent:", anchor=E, width=10)
         self.blueBrainVar = StringVar(self.top)
         mnuBrain = OptionMenu(self.top, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
-        mnuBrain.config(width=20)
+        mnuBrain.config(width=16)
         self.blueBrainVar.set("SmartBrain")
-        lblBrain.grid(column=3, row=1, sticky="ew", ipadx=6, ipady=2)
-        mnuBrain.grid(column=4, row=1, sticky="ew", padx=6)       
-        
-        Label(self.top, width=20).grid(row=1, column=5, sticky=W+E)         
-        
+        lblBrain.grid(column=1, row=1, ipadx=6, ipady=2)
+        mnuBrain.grid(column=2, row=1, padx=6)
+
+        lblDiff = Label(self.top, text="Difficulty:", anchor=E, width=10)
+        self.difficultyVar = StringVar(self.top)
+        mnuDiff = OptionMenu(self.top, self.difficultyVar, "Normal")
+        mnuDiff.config(width=16)
+        self.difficultyVar.set("Normal")
+        lblDiff.grid(column=1, row=2, ipadx=6, ipady=2)
+        mnuDiff.grid(column=2, row=2, padx=6)
+
+        lblSize = Label(self.top, text="Size:", anchor=E, width=10)
+        self.sizeVar = StringVar(self.top)
+        mnuSize = OptionMenu(self.top, self.sizeVar, "Small", "Normal", "Large", "Extra Large")
+        mnuSize.config(width=16)
+        self.sizeVar.set("Normal")
+        lblSize.grid(column=3, row=1, ipadx=6, ipady=2)
+        mnuSize.grid(column=4, row=1, padx=6)
+
+        self.top.rowconfigure(0, weight=1)
+        self.top.columnconfigure(5, weight=1)
+        #self.top.columnconfigure(1, weight=2)
+
     def startGame(self):
         self.top.destroy()
-        Application(self.root, self.blueBrainVar.get())
+        Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(), self.sizeVar.get())
         self.root.update()
         self.root.deiconify()
-        
+
+    def loadGame(self):
+        self.top.destroy()
+        app = Application(self.root, self.blueBrainVar.get())
+        app.loadGame()
+        self.root.update()
+        self.root.deiconify()
+
     def newBackground(self):
         self.bgcanvas.delete(self.bgid)
         self.bgcanvas.delete(self.textid)
         i = str(randint(1, self.backgrounds))
-        im = Image.open("backgrounds/background"+i+".jpg").resize((900,600))
+        im = Image.open("backgrounds/background" + i + ".jpg").resize((900, 600))
         self.bgim = ImageTk.PhotoImage(im)
         self.bgid = self.bgcanvas.create_image(0, 0, image=self.bgim, anchor=NW)
-        self.textid = self.bgcanvas.create_text((200,80), text = GAME_NAME, font = self.titleFont)
+        self.textid = self.bgcanvas.create_text((200, 80), text=GAME_NAME, font=self.titleFont)
+        self.bgcanvas.create_text((200, 142), text=AUTHORS, font=self.subtitleFont)
         self.top.after(10000, self.newBackground)
-        
+
     def playMusic(self):
         if canPlayMusic:
-            tracks = os.listdir("music")
+            tracks = [x for x in os.listdir(MUSIC_DIR) if "mp3" in x ]
             track = choice(tracks)
-            print track
-            clip = mp3play.load("music/"+track)
-            print clip, clip.milliseconds()
-            clip.play()
-            print "playing?!"
-            time.sleep(.5) # TODO: fix music playback!!!
-            self.top.after(clip.milliseconds(), self.playMusic)
-        
+            self.clip = mp3play.load(os.path.join(MUSIC_DIR, track))
+            self.clip.play()
+            self.top.after(self.clip.milliseconds(), self.playMusic)
+
     def exit(self, event=None):
         self.root.quit()
-        
+
 if __name__ == "__main__":
     root = Tk()
     root.withdraw()
