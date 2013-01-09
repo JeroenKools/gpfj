@@ -41,6 +41,7 @@ except:
     canPlayMusic = False
 
 class Application:
+    """Main game and UI class"""
     def __init__(self, root, brain="SmartBrain", difficulty="Normal", size="Normal"):
         self.root = root
         self.blueBrain = eval(brain)
@@ -137,6 +138,7 @@ class Application:
         self.newGame()
 
     def confirmNewGame(self, event=None):
+        """Ask user to confirm that they want to start a new game and lose their current one"""
         if self.started and (not self.won) and tkMessageBox.askyesno("Confirm new game",
             "If you start a new game, your current game will be lost. Are you sure?"):
                 self.newGame()
@@ -145,7 +147,8 @@ class Application:
             self.newGame()
 
     def newGame(self, event=None):
-
+        """Reset a bunch of variables in order to start a new game""" 
+        
         # interaction vars
         self.clickedUnit = None
         self.placingUnit = False
@@ -177,6 +180,8 @@ class Application:
         self.setStatusBar("Place your army, or press 'p' for random placement")
 
     def loadGame(self):
+        """Open a load dialog, and then load the selected save file and continue playing that game"""
+         
         loadFilename = tkFileDialog.askopenfilename(defaultextension=".sav",
                                                     filetypes=[('%s saves' % GAME_NAME, '.sav')],
                                                       initialdir=os.getcwd())
@@ -200,6 +205,8 @@ class Application:
                 self.setStatusBar("Game loaded!")
 
     def saveGame(self):
+        """Open a save dialog and save the current game to the selected file"""
+        
         saveFilename = tkFileDialog.asksaveasfilename(defaultextension=".sav",
                                                       filetypes=[('%s saves' % GAME_NAME, '.sav')],
                                                       initialdir=os.getcwd())
@@ -217,6 +224,8 @@ class Application:
             self.setStatusBar("Game saved")
 
     def settings(self):
+        """Show a window that allows the user to change several game settings"""
+        
         self.settingsWindow = Toplevel(width=300)
 
         # OPPONENT
@@ -266,6 +275,8 @@ class Application:
         btnOK.grid(column=0, row=3, columnspan=2, ipadx=15, pady=8)
 
     def updateSettings(self):
+        """Change the internal variables when the user confirms his changes made in the settings window"""
+        
         global DEBUG
         newBlueBrainName = self.blueBrainVar.get()
         DEBUG = (self.debugVar.get() == "True")
@@ -282,8 +293,9 @@ class Application:
 
         self.settingsWindow.destroy()
 
-
     def loadStats(self):
+        """Load statistics of past games from the stats file"""
+        
         if os.path.exists('stats.cfg'):
             statsfile = open('stats.cfg', 'r')
             self.stats = pickle.load(statsfile)
@@ -293,6 +305,8 @@ class Application:
             self.stats = Stats(datetime.datetime.now())
 
     def showStats(self):
+        """Show a window with statistics of past games"""
+        
         self.stats.refresh()
         t = self.stats.totalRunTime
         hours = t.seconds / 3600
@@ -335,9 +349,11 @@ class Application:
         btnOK.grid(column=0, row=1, columnspan=2, ipadx=15, pady=15)
 
     def closeStats(self):
+        """Close the statistics window"""
         self.statsWindow.destroy()
 
     def helpMe(self):
+        """Show a window with information about the game objective and the different pieces"""
         #TODO: Give more info about game rules, depending on phase (placement or actual game) 
         self.helpImage = Image.open("help.png")
         self.helpImage = ImageTk.PhotoImage(self.helpImage)
@@ -349,32 +365,43 @@ class Application:
         btnOK.grid(column=0, row=1, columnspan=2, ipadx=15, pady=8)
 
     def closeHelp(self):
+        """Close the help window"""
         self.helpWindow.destroy()
 
     def visitWebsite(self):
+        """Open the Google Code website in the default browser"""
         webbrowser.open(URL)
 
     def about(self):
+        """Show a window with information about the game developers and credits for used content"""
         wrapper = TextWrapper(width=60)
-        p1 = """\
+        
+        fulltext = """\
         %s is a game developed by %s
         for the course 'Game Programming' at the University of Amsterdam in 2012.
-        """ % (GAME_NAME, AUTHORS)
 
-        p2 = """The game is inspired by the classic board game Stratego (copyright Hasbro)."""
+        The game is inspired by the classic board game Stratego (copyright Hasbro).
 
-        p3 = """
+        CREDITS:
+
         Sound effects by pierrecartoons1979, steveygos93, Erdie and benboncan
-        (Creative Commons at freesounds.org)"""
+        (Creative Commons at freesounds.org)
 
-        p4 = """
         Music by the United States Army Old Guard Fife And Drum Corps 
-        (Public domain, available at freemusicarchive.org)"""
+        (Public domain, available at freemusicarchive.org)
 
-        text = wrapper.fill(dedent(p1)) + "\n\n" + \
-                "CREDITS:\n\n" + wrapper.fill(dedent(p2)) + \
-                "\n\n" + wrapper.fill(dedent(p3)) + "\n\n" + wrapper.fill(dedent(p4))
-        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), text)
+        Unit icons are borrowed from stratego-gui, another Stratego-inspired project 
+        on Google Code (GPL)
+
+        All the background images in the game launcher are in the public domain. 
+        """ % (GAME_NAME, AUTHORS)
+        
+        paragraphs = fulltext.split("\n\n")
+        windowtext = ""
+        
+        for p in paragraphs:
+            windowtext += wrapper.fill(dedent(p)) + "\n\n"
+        tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), windowtext)
 
     def setStatusBar(self, newText):
         """Change the text in the status bar."""
@@ -383,6 +410,7 @@ class Application:
 
     def drawMap(self):
         """Draw the tiles and units on the map."""
+        # TODO: prettier, irregular coast
         self.map.delete(ALL)
         self.map.create_image(0, 0, image=self.grassImage, anchor=NW)
 
@@ -445,6 +473,7 @@ class Application:
                 unplacedBlue += 1
 
     def drawUnit(self, canvas, unit, x, y, color=None):
+        """Draw unit tile with correct color and image, 3d border etc"""
         if color == None:
             color = RED_PLAYER_COLOR if unit.color == "Red" else BLUE_PLAYER_COLOR
 
@@ -493,6 +522,7 @@ class Application:
                 return False
 
     def rightClick(self, event):
+        """Deal with right-click (i.e., deselect selected unit"""
         self.clickedUnit = None
         self.movingUnit = False
         self.drawMap()
@@ -537,6 +567,7 @@ class Application:
             self.setStatusBar("You clicked a %s tile with %s" % (terrain, unit))
 
     def placeUnit(self, x, y):
+        """Place a unit on the map at the first of the game"""
         if self.isPool(x, y):
             self.setStatusBar("You can't place units in the water!")
             return
@@ -562,6 +593,7 @@ class Application:
         self.drawMap()
 
     def moveUnit(self, x, y):
+        """Move a unit according to selected unit and clicked destination"""
         if not self.legalMove(self.clickedUnit, x, y):
             self.setStatusBar("You can't move there!")
             return
@@ -603,14 +635,17 @@ class Application:
             self.endTurn()
 
     def otherPlayer(self, color):
+        """Return opposite color"""
         if color == "Red": return "Blue"
         return "Red"
 
     def otherArmy(self, color):
+        """Return opposite army"""
         if color == "Red": return self.blueArmy
         return self.redArmy
 
     def endTurn(self):
+        """Switch turn to other player and check for end of game conditions"""
         self.turn = self.otherPlayer(self.turn)
 
         if self.brains[self.turn] and not self.won: # computer player?
@@ -697,6 +732,7 @@ class Application:
         return True
 
     def attack(self, attacker, defender):
+        """Give the outcome of an attack and remove defeated pieces from the board"""
 
         text = "A %s %s attacked a %s %s. " % (attacker.color, attacker.name, defender.color, defender.name)
         attacker.isKnown = True
@@ -778,6 +814,7 @@ class Application:
         self.movingUnit = False
 
     def getUnit(self, x, y):
+        """Return unit at a certain position"""
         return self.redArmy.getUnit(x, y) or self.blueArmy.getUnit(x, y)
 
     def panelClick(self, event):
@@ -813,6 +850,7 @@ class Application:
         return -x - 1
 
     def victory(self, color, noMoves=False):
+        """Show the victory/defeat screen"""
         self.won = True
         self.drawMap()
         top = Toplevel(width=300)
@@ -852,11 +890,13 @@ class Application:
             self.playSound(SOUND_LOSE)
 
     def playSound(self, name):
+        """Play a sound, if on Windows and if sound is enabled"""
         if canPlaySound and self.soundOn.get():
             winsound.PlaySound("%s/%s" % (SOUND_DIR, name),
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
 
     def quickplace(self, event):
+        """Let the computer place human player's pieces randomly"""
         if not self.started:
             tempBrain = randomBrain.Brain(self, self.redArmy, BOARD_WIDTH)
             tempBrain.placeArmy(self.armyHeight)
@@ -872,6 +912,8 @@ class Application:
         self.root.quit()
 
 class Stats:
+    """Class containing a number of statistics about previously played
+        games, such as number of games played or win percentage."""
     def __init__(self, lastChecked):
         self.gamesPlayed = 0
         self.gamesWon = 0
@@ -885,6 +927,7 @@ class Stats:
         self.lastChecked = lastChecked
 
     def addGame(self, won):
+        """Update the statistics dependent on the number of games played, won or lost"""
         self.gamesPlayed += 1
         if won:
             self.gamesWon += 1
@@ -895,24 +938,29 @@ class Stats:
             self.currentStreak = 0
 
     def refresh(self):
+        """Update the total running time"""
         self.totalRunTime += (datetime.datetime.now() - self.lastChecked)
         self.lastChecked = datetime.datetime.now()
 
     def save(self):
+        """Save the statistics to a file"""
         self.refresh()
         with open('stats.cfg', 'w') as f:
             pickle.dump(self, f)
 
 class Launcher():
+    """The launcher is the first window shown after starting the game, providing
+        some fancy graphics and music, as well as some options to start a game"""
     def __init__(self, root):
         self.root = root
-        self.top = Toplevel(root, width=1024, height=600, bd=1)
+        self.top = Toplevel(root, bd=0)
         self.top.minsize(900, 675)
         self.top.maxsize(900, 675)
         self.top.geometry("+50+50")
         self.top.title("%s v%s" % (GAME_NAME, VERSION))
         self.top.bind("<Escape>", self.exit)
         self.top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+        self.top.protocol("WM_DELETE_WINDOW", self.exit)
 
         Label(self.top).grid()
 
@@ -973,15 +1021,16 @@ class Launcher():
 
         self.top.rowconfigure(0, weight=1)
         self.top.columnconfigure(5, weight=1)
-        #self.top.columnconfigure(1, weight=2)
 
     def startGame(self):
+        """Start the main interface with the options chosen in the launcher, and close the launcher window"""
         self.top.destroy()
         Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(), self.sizeVar.get())
         self.root.update()
         self.root.deiconify()
 
     def loadGame(self):
+        """Load a game and close the launcher"""
         self.top.destroy()
         app = Application(self.root, self.blueBrainVar.get())
         app.loadGame()
@@ -989,6 +1038,7 @@ class Launcher():
         self.root.deiconify()
 
     def newBackground(self):
+        """Keep replacing the background image randomly at a set interval, forever"""
         self.bgcanvas.delete(self.bgid)
         self.bgcanvas.delete(self.textid)
         i = str(randint(1, self.backgrounds))
@@ -1000,6 +1050,7 @@ class Launcher():
         self.top.after(10000, self.newBackground)
 
     def playMusic(self):
+        """Play songs from the music directory"""
         if canPlayMusic:
             tracks = [x for x in os.listdir(MUSIC_DIR) if "mp3" in x ]
             track = choice(tracks)
@@ -1008,6 +1059,7 @@ class Launcher():
             self.top.after(self.clip.milliseconds(), self.playMusic)
 
     def exit(self, event=None):
+        """End the program!"""
         self.root.quit()
 
 if __name__ == "__main__":
