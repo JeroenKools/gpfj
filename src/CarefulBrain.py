@@ -8,8 +8,9 @@ Careful brain
 
 import randomBrain
 from random import shuffle, choice
+import constants
 
-BOARD_WIDTH = 0
+BOARD_WIDTH = constants.BOARD_WIDTH
 
 class Brain(randomBrain.Brain):
     def __init__(self, game, army, boardwidth=None):

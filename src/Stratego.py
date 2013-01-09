@@ -6,10 +6,25 @@ Developed for the course "Game Programming" at the University of Amsterdam
 '''
 
 from Army import Army, Icons
-from constants import *
-import randomBrain, SmartBrain, CarefulBrain
+from constants import *                      #@UnusedWildImport
+import randomBrain, SmartBrain, CarefulBrain #@UnusedImport
+
+from math import sin, pi
+import webbrowser
+import os
+import pickle
+import datetime
+from textwrap import fill, dedent, TextWrapper
+from random import randint, choice
+import sys
+
+py26 = True
+if sys.version_info[:2] == (2, 7):
+    py26 = False
 
 from Tkinter import *
+if not py26:
+    from ttk import Combobox
 import tkMessageBox
 import tkFileDialog
 import tkFont
@@ -24,15 +39,6 @@ try:
     canPlayMusic = True
 except:
     canPlayMusic = False
-
-from math import sin, pi
-import webbrowser
-import os
-import pickle
-import datetime
-from textwrap import fill, dedent, TextWrapper
-from random import randint, choice
-import time
 
 class Application:
     def __init__(self, root, brain="SmartBrain", difficulty="Normal", size="Normal"):
@@ -216,17 +222,27 @@ class Application:
         # OPPONENT
         lblBrain = Label(self.settingsWindow, text="Opponent Brain")
         self.blueBrainVar = StringVar(self.settingsWindow)
-        mnuBrain = OptionMenu(self.settingsWindow, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
-        mnuBrain.config(width=20)
+        if py26:
+            mnuBrain = OptionMenu(self.settingsWindow, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
+            mnuBrain.config(width=20)
+        else:
+            mnuBrain = Combobox(self.settingsWindow, textvariable=self.blueBrainVar, state="readonly",
+                            justify="center", width=20)
+            mnuBrain['values'] = ("randomBrain", "CarefulBrain", "SmartBrain")
         self.blueBrainVar.set(self.blueBrainName)
         lblBrain.grid(column=0, row=0, sticky="ew", ipadx=10, ipady=10)
         mnuBrain.grid(column=1, row=0, sticky="ew", padx=10)
 
-        # DIFFICULTY
+        # DIFFICULTY #TODO: implement difficulty in Brains
         lblDifficulty = Label(self.settingsWindow, text="Difficulty")
         self.difficultyVar = StringVar(self.settingsWindow)
-        mnuDifficulty = OptionMenu(self.settingsWindow, self.difficultyVar, "Normal") # TODO: difficulty
-        mnuDifficulty.config(width=20)
+        if py26:
+            mnuDifficulty = OptionMenu(self.settingsWindow, self.difficultyVar, "Normal")
+            mnuDifficulty.config(width=20)
+        else:
+            mnuDifficulty = Combobox(self.settingsWindow, textvariable=self.difficultyVar, state="readonly",
+                            justify="center", width=20)
+            mnuDifficulty['values'] = ("Normal")
         self.difficultyVar.set(self.difficulty)
         lblDifficulty.grid(column=0, row=1, sticky="ew", ipadx=10, ipady=10)
         mnuDifficulty.grid(column=1, row=1, sticky="ew", padx=10)
@@ -234,8 +250,14 @@ class Application:
         # DEBUG
         lblDebug = Label(self.settingsWindow, text="Debug")
         self.debugVar = StringVar(self.settingsWindow)
-        mnuDebug = OptionMenu(self.settingsWindow, self.debugVar, "True", "False")
-        mnuDebug.config(width=20)
+        if py26:
+            mnuDebug = OptionMenu(self.settingsWindow, self.debugVar, "True", "False")
+            mnuDebug.config(width=20)
+        else:
+            mnuDebug = Combobox(self.settingsWindow, textvariable=self.debugVar, state="readonly",
+                            justify="center", width=20)
+            mnuDebug['values'] = ("True", "False")
+
         self.debugVar.set(str(DEBUG))
         lblDebug.grid(column=0, row=2, sticky="ew", ipadx=10, ipady=10)
         mnuDebug.grid(column=1, row=2, sticky="ew", padx=10)
@@ -915,24 +937,36 @@ class Launcher():
 
         lblBrain = Label(self.top, text="Opponent:", anchor=E, width=10)
         self.blueBrainVar = StringVar(self.top)
-        mnuBrain = OptionMenu(self.top, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
-        mnuBrain.config(width=16)
+        if py26:
+            mnuBrain = OptionMenu(self.top, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
+            mnuBrain.config(width=16)
+        else:
+            mnuBrain = Combobox(self.top, textvariable=self.blueBrainVar, state="readonly")
+            mnuBrain['values'] = ("randomBrain", "CarefulBrain", "SmartBrain")
         self.blueBrainVar.set("SmartBrain")
         lblBrain.grid(column=1, row=1, ipadx=6, ipady=2)
         mnuBrain.grid(column=2, row=1, padx=6)
 
         lblDiff = Label(self.top, text="Difficulty:", anchor=E, width=10)
         self.difficultyVar = StringVar(self.top)
-        mnuDiff = OptionMenu(self.top, self.difficultyVar, "Normal")
-        mnuDiff.config(width=16)
+        if py26:
+            mnuDiff = OptionMenu(self.top, self.difficultyVar, "Normal")
+            mnuDiff.config(width=16)
+        else:
+            mnuDiff = Combobox(self.top, textvariable=self.difficultyVar, state="readonly")
+            mnuDiff['values'] = ("Normal")
         self.difficultyVar.set("Normal")
         lblDiff.grid(column=1, row=2, ipadx=6, ipady=2)
         mnuDiff.grid(column=2, row=2, padx=6)
 
         lblSize = Label(self.top, text="Size:", anchor=E, width=10)
         self.sizeVar = StringVar(self.top)
-        mnuSize = OptionMenu(self.top, self.sizeVar, "Small", "Normal", "Large", "Extra Large")
-        mnuSize.config(width=16)
+        if py26:
+            mnuSize = OptionMenu(self.top, self.sizeVar, "Small", "Normal", "Large", "Extra Large")
+            mnuSize.config(width=16)
+        else:
+            mnuSize = Combobox(self.top, textvariable=self.sizeVar, state="readonly")
+            mnuSize['values'] = ("Small", "Normal", "Large", "Extra Large")
         self.sizeVar.set("Normal")
         lblSize.grid(column=3, row=1, ipadx=6, ipady=2)
         mnuSize.grid(column=4, row=1, padx=6)
