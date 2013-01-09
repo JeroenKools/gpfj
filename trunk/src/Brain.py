@@ -9,6 +9,7 @@ Template brain
 class Brain:
     def __init__(self, game, army):
         self.army = army
+        self.game = game
 
     def placeArmy(self):
         # Place units on board; give a (valid) position to all units in self.army

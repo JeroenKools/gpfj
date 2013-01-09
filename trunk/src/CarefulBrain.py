@@ -8,12 +8,16 @@ Careful brain
 
 import randomBrain
 from random import shuffle, choice
-from constants import *
+
+BOARD_WIDTH = 0
 
 class Brain(randomBrain.Brain):
-    def __init__(self, game, army):
+    def __init__(self, game, army, boardwidth=None):
         self.army = army
         self.game = game
+
+        global BOARD_WIDTH
+        if boardwidth: BOARD_WIDTH = boardwidth
 
     def placeArmy(self, armyHeight):
         bombs = self.getUnits("Bomb")
