@@ -143,12 +143,12 @@ class Application:
             "If you start a new game, your current game will be lost. Are you sure?"):
                 self.newGame()
 
-        if self.won:
+        if self.won or not self.started:
             self.newGame()
 
     def newGame(self, event=None):
-        """Reset a bunch of variables in order to start a new game""" 
-        
+        """Reset a bunch of variables in order to start a new game"""
+
         # interaction vars
         self.clickedUnit = None
         self.placingUnit = False
@@ -181,7 +181,7 @@ class Application:
 
     def loadGame(self):
         """Open a load dialog, and then load the selected save file and continue playing that game"""
-         
+
         loadFilename = tkFileDialog.askopenfilename(defaultextension=".sav",
                                                     filetypes=[('%s saves' % GAME_NAME, '.sav')],
                                                       initialdir=os.getcwd())
@@ -206,7 +206,7 @@ class Application:
 
     def saveGame(self):
         """Open a save dialog and save the current game to the selected file"""
-        
+
         saveFilename = tkFileDialog.asksaveasfilename(defaultextension=".sav",
                                                       filetypes=[('%s saves' % GAME_NAME, '.sav')],
                                                       initialdir=os.getcwd())
@@ -225,7 +225,7 @@ class Application:
 
     def settings(self):
         """Show a window that allows the user to change several game settings"""
-        
+
         self.settingsWindow = Toplevel(width=300)
 
         # OPPONENT
@@ -276,7 +276,7 @@ class Application:
 
     def updateSettings(self):
         """Change the internal variables when the user confirms his changes made in the settings window"""
-        
+
         global DEBUG
         newBlueBrainName = self.blueBrainVar.get()
         DEBUG = (self.debugVar.get() == "True")
@@ -295,7 +295,7 @@ class Application:
 
     def loadStats(self):
         """Load statistics of past games from the stats file"""
-        
+
         if os.path.exists('stats.cfg'):
             statsfile = open('stats.cfg', 'r')
             self.stats = pickle.load(statsfile)
@@ -306,7 +306,7 @@ class Application:
 
     def showStats(self):
         """Show a window with statistics of past games"""
-        
+
         self.stats.refresh()
         t = self.stats.totalRunTime
         hours = t.seconds / 3600
@@ -376,7 +376,7 @@ class Application:
     def about(self):
         """Show a window with information about the game developers and credits for used content"""
         wrapper = TextWrapper(width=60)
-        
+
         fulltext = """\
         %s is a game developed by %s
         for the course 'Game Programming' at the University of Amsterdam in 2012.
@@ -396,10 +396,10 @@ class Application:
 
         All the background images in the game launcher are in the public domain. 
         """ % (GAME_NAME, AUTHORS)
-        
+
         paragraphs = fulltext.split("\n\n")
         windowtext = ""
-        
+
         for p in paragraphs:
             windowtext += wrapper.fill(dedent(p)) + "\n\n"
         tkMessageBox.showinfo("%s %s" % (GAME_NAME, VERSION), windowtext)
@@ -801,6 +801,8 @@ class Application:
                     self.playSound(SOUND_BOMB)
             elif defender.name == "Marshal" and attacker.canKillMarshal:
                 self.playSound(SOUND_ARGH)
+            elif defender.name == "Marshal" and attacker.name == "Marshal":
+                self.playSound(SOUND_OHNO)
             elif attacker.name == "Marshal":
                 self.playSound(SOUND_LAUGH)
             else:
