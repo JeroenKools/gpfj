@@ -342,7 +342,8 @@ class Application:
                          %s""" % (self.stats.gamesPlayed, self.stats.gamesWon, self.stats.gamesLost,
                                   100. * self.stats.gamesWon / max(1, self.stats.gamesPlayed),
                                   self.stats.longestStreak,
-                                  0, timestr))
+                                  self.stats.lowestCasualties,
+                                  timestr))
         lblStats.grid(column=1, row=0, sticky="ew", ipadx=35, ipady=10)
 
         btnOK = Button(self.statsWindow, text="OK", command=self.closeStats)
@@ -875,7 +876,8 @@ class Application:
             else:
                 messageTxt = "Unfortunately, the enemy has captured your flag. You lose."
 
-        self.stats.addGame(color == "Red")
+        casualties = len(self.redArmy.army) - self.redArmy.nrAlive()
+        self.stats.addGame(color == "Red", casualties)
         message = Label(top, text=messageTxt)
         message.grid(row=0, column=0, sticky=NE, ipadx=15, ipady=50)
 
@@ -921,18 +923,19 @@ class Stats:
 
         self.currentStreak = 0
         self.longestStreak = 0
-        self.lowestCasualties = 0
+        self.lowestCasualties = 999
 
         self.totalRunTime = datetime.timedelta(0)
         self.lastChecked = lastChecked
 
-    def addGame(self, won):
+    def addGame(self, won, casualties):
         """Update the statistics dependent on the number of games played, won or lost"""
         self.gamesPlayed += 1
         if won:
             self.gamesWon += 1
             self.currentStreak += 1
             self.longestStreak = max(self.longestStreak, self.currentStreak)
+            self.lowestCasualties = min(self.lowestCasualties, casualties)
         else:
             self.gamesLost += 1
             self.currentStreak = 0
