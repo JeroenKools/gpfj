@@ -21,36 +21,68 @@ class Brain(randomBrain.Brain):
         if boardwidth: BOARD_WIDTH = boardwidth
 
     def placeArmy(self, armyHeight):
+        self.armyHeight = armyHeight
         bombs = self.getUnits("Bomb")
         flag = self.getUnits("Flag")
 
         if self.army.color == "Blue":
-            rows = range(armyHeight)
+            self.rows = range(self.armyHeight)
         else:
-            rows = range(BOARD_WIDTH - 1, BOARD_WIDTH - armyHeight - 1, -1)
+            self.rows = range(BOARD_WIDTH - 1, BOARD_WIDTH - self.armyHeight - 1, -1)
 
+        self.flagpos = self.placeFlag()
+        print self.flagpos
+        flag[0].setPosition(self.flagpos[0], self.flagpos[1])
+
+        self.placeBombs(bombs)
+
+        # place other pieces randomly!
+        r = randomBrain.Brain(self.game, self.army)
+        r.placeArmy(self.armyHeight)
+
+    def placeFlag(self):
         positions = []
-        for n, i in enumerate(rows):
-            for _ in range(armyHeight - n - 1): # weighted toward back rows 
+        for n, i in enumerate(self.rows):
+            for _ in range(self.armyHeight - n - 1): # weighted toward back rows 
                 for x in range(BOARD_WIDTH):
                     positions += [(x, i)]
 
-        flagpos = choice(positions)
-        flag[0].setPosition(flagpos[0], flagpos[1])
-        positions = [pos for pos in positions if pos != flagpos]
+        return choice(positions)
 
-        d = 1 if self.army.color == "Blue" else -1
-        for i in range(3):
-            for x in range(max(0, flagpos[0] - 2), min(flagpos[0] + 3, BOARD_WIDTH)):
-                positions += [(x, flagpos[1] + d)]
+    def placeBombs(self, bombs):
+        positions = []
+        nearFlagWeight = 5
+        backrowWeight = 2
+        frontrowWeight = 3
+        inFrontOfFlagWeight = 10
+
+        frontrow = self.armyHeight - 1 if self.army.color == "Blue" else BOARD_WIDTH - self.armyHeight
+        backrow = 0 if self.army.color == "Blue" else BOARD_WIDTH - 1
+        forward = 1 if self.army.color == "Blue" else -1
+
+        for row in range(min(frontrow, backrow), max(frontrow, backrow) + 1):
+            for column in range(BOARD_WIDTH):
+                if row == backrow:
+                    positions += backrowWeight * [(column, row)]
+                elif row == frontrow:
+                    positions += frontrowWeight * [(column, row)]
+                else:
+                    positions += [(column, row)]
+
+        # positions around the flag have an extra high probability of getting a bomb        
+        if self.flagpos[0] > 0:
+            positions += nearFlagWeight * [(self.flagpos[0] - 1, self.flagpos[1])]
+        if self.flagpos[0] < (BOARD_WIDTH - 1):
+            positions += nearFlagWeight * [(self.flagpos[0] + 1, self.flagpos[1])]
+        if self.flagpos[1] != frontrow:
+            positions += inFrontOfFlagWeight * [(self.flagpos[0], self.flagpos[1] + forward)]
+
+        positions = [x for x in positions if x != self.flagpos]
 
         for bomb in bombs:
             bombpos = choice(positions)
             bomb.setPosition(bombpos[0], bombpos[1])
             positions = [pos for pos in positions if pos != bombpos]
-
-        r = randomBrain.Brain(self.game, self.army)
-        r.placeArmy(armyHeight)
 
     def getUnits(self, name):
         return [unit for unit in self.army.army if unit.name == name]

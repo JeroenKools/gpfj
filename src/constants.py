@@ -43,6 +43,7 @@ SOUND_BOMB = "explosion.wav"
 SOUND_ARGH = "argh2.wav"
 SOUND_LAUGH = "laugh.wav"
 SOUND_DEFUSE = "creak.wav"
+SOUND_OHNO = "ohnoes3.wav"
 
 ## GAME PARAMS ##
 BOARD_WIDTH = 10        # Board size in tiles, classic Stratego value is 10, tested between 6 and 20. 
