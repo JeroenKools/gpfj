@@ -65,6 +65,7 @@ class Army:
         return highest
 
     def highestUnknown(self):
+        """Return the highest possible rank that a unit who's rank is unknown can have"""
         highest = 0
         for unit in self.army:
             if unit.rank > Marshal().rank: # ignore bombs and funny stuff
@@ -72,7 +73,13 @@ class Army:
             if unit.alive and not unit.isKnown and unit.rank > highest:
                 highest = unit.rank
         return highest
-
+    
+    def nrAlive(self):
+        """Return the number of units in the army that have not been defeated"""
+        alive = 0
+        for unit in self.army:
+            if unit.alive: alive += 1
+        return alive
 
 class Unit:
     def __init__(self, position=None):
