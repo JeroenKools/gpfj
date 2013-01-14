@@ -7,7 +7,7 @@ Developed for the course "Game Programming" at the University of Amsterdam
 
 from Army import Army, Icons
 from constants import *                      #@UnusedWildImport
-import randomBrain, SmartBrain, CarefulBrain #@UnusedImport
+import randomBrain, SmartBrain, SmartBrain2, CarefulBrain #@UnusedImport
 
 from math import sin, pi
 import webbrowser
@@ -232,12 +232,12 @@ class Application:
         lblBrain = Label(self.settingsWindow, text="Opponent Brain")
         self.blueBrainVar = StringVar(self.settingsWindow)
         if py26:
-            mnuBrain = OptionMenu(self.settingsWindow, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
+            mnuBrain = OptionMenu(self.settingsWindow, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain", "SmartBrain2")
             mnuBrain.config(width=20)
         else:
             mnuBrain = Combobox(self.settingsWindow, textvariable=self.blueBrainVar, state="readonly",
                             justify="center", width=20)
-            mnuBrain['values'] = ("randomBrain", "CarefulBrain", "SmartBrain")
+            mnuBrain['values'] = ("randomBrain", "CarefulBrain", "SmartBrain", "SmartBrain2")
         self.blueBrainVar.set(self.blueBrainName)
         lblBrain.grid(column=0, row=0, sticky="ew", ipadx=10, ipady=10)
         mnuBrain.grid(column=1, row=0, sticky="ew", padx=10)
@@ -599,6 +599,11 @@ class Application:
             self.setStatusBar("You can't move there!")
             return
 
+        if self.clickedUnit.color == "Red":
+            thisArmy = self.redArmy
+        else:
+            thisArmy = self.blueArmy
+
         (i, j) = self.clickedUnit.getPosition()
         if abs(i - x) > 1 or abs(j - y) > 1:
             self.clickedUnit.isKnown = True
@@ -624,6 +629,31 @@ class Application:
 
         else:
             self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
+            if (abs(self.clickedUnit.position[0]-x)+abs(self.clickedUnit.position[1]-y))>1 and self.clickedUnit.hasMovedFar != True:
+                #thisArmy.nrOfMoved += 1
+                #thisArmy.nrOfUnmoved -= 1
+                #thisArmy.nrOfUnknownMoved += 1
+                if not self.clickedUnit.hasMoved:
+                    thisArmy.nrOfKnownMovable += 1
+                elif not self.clickedUnit.isKnown:
+                    thisArmy.nrOfUnknownMoved -= 1
+                    thisArmy.nrOfKnownMovable += 1
+                self.clickedUnit.hasMovedFar = True
+                for unit in thisArmy.army:
+                    if self.clickedUnit == unit:
+                        unit.isKnown = True
+                        unit.possibleMovableRanks = ["Scout"]
+                        unit.possibleUnmovableRanks = []
+                    elif "Scout" in unit.possibleMovableRanks:unit.possibleMovableRanks.remove("Scout")
+            elif self.clickedUnit.hasMoved != True:
+                #thisArmy.nrOfMoved += 1
+                #thisArmy.nrOfUnmoved -= 1
+                thisArmy.nrOfUnknownMoved += 1
+                self.clickedUnit.hasMoved = True
+                for unit in thisArmy.army:
+                    if self.clickedUnit == unit:
+                        unit.possibleUnmovableRanks = []
+
             self.clickedUnit.setPosition(x, y)
             self.clickedUnit.hasMoved = True
 
@@ -733,6 +763,50 @@ class Application:
         return True
 
     def attack(self, attacker, defender):
+        ######## 
+        if attacker.color == "Red":
+            attackerArmy = self.redArmy
+            defenderArmy = self.blueArmy
+        else:
+            attackerArmy = self.blueArmy
+            defenderArmy = self.redArmy
+        
+        # Only the first time a piece becomes known, the possible ranks are updated:
+        if not attacker.isKnown:
+            if attacker.hasMoved:
+                attackerArmy.nrOfUnknownMoved -= 1
+            attacker.hasMoved = True
+            #attackerArmy.nrOfMoved += 1
+            attackerArmy.nrOfKnownMovable += 1
+            for unit in attackerArmy.army:
+                if unit == attacker:
+                    attacker.possibleMovableRanks = [attacker.name]
+                    attacker.possibleUnmovableRanks = []
+                elif attacker.name in unit.possibleMovableRanks: unit.possibleMovableRanks.remove(attacker.name)
+
+        if defender.canMove and not defender.isKnown:
+            if defender.hasMoved:
+                defenderArmy.nrOfUnknownMoved -= 1
+            defender.hasMoved = True #Although it not moved, it is known and attacked, so..
+            #defenderArmy.nrOfMoved += 1
+            defenderArmy.nrOfKnownMovable += 1
+            for unit in defenderArmy.army:
+                if unit == defender:
+                    defender.possibleMovableRanks = [defender.name]
+                    defender.possibleUnmovableRanks = []
+                elif defender.name in unit.possibleMovableRanks: unit.possibleMovableRanks.remove(defender.name)
+        elif not defender.isKnown:
+            defenderArmy.nrOfKnownUnmovable += 1
+            for unit in defenderArmy.army:
+                if unit == defender:
+                    defender.possibleUnmovableRanks = [defender.name]
+                    defender.possibleMovableRanks = []
+                elif defender.name in unit.possibleUnmovableRanks: unit.possibleUnmovableRanks.remove(defender.name)
+
+
+        ##########
+
+
         """Give the outcome of an attack and remove defeated pieces from the board"""
 
         text = "A %s %s attacked a %s %s. " % (attacker.color, attacker.name, defender.color, defender.name)
@@ -747,27 +821,50 @@ class Application:
         elif attacker.canDefuseBomb and defender.name == "Bomb":
             attacker.position = defender.position
             defender.die()
+            #if defender.name in defenderArmy.livingPossibleUnmovableRanks: defenderArmy.livingPossibleUnmovableRanks.remove(defender.name)
+            defenderArmy.nrOfLiving -= 1
+            defenderArmy.nrOfKnownUnmovable -= 1
             attacker.justAttacked = True
             text += "The mine was disabled."
+            if (abs(attacker.position[0] - self.blueArmy.army[0].position[0])+abs(attacker.position[1] - self.blueArmy.army[0].position[1]) == 1):
+                self.blueArmy.flagIsBombProtected = False
+            if (abs(attacker.position[0] - self.redArmy.army[0].position[0])+abs(attacker.position[1] - self.redArmy.army[0].position[1]) == 1):
+                self.redArmy.flagIsBombProtected = False
+
 
         elif attacker.canKillMarshal and defender.name == "Marshal":
             attacker.position = defender.position
+            #if defender.name in defenderArmy.livingPossibleMovableRanks: defenderArmy.livingPossibleMovableRanks.remove(defender.name)
+            defenderArmy.nrOfLiving -= 1
+            defenderArmy.nrOfMoved -= 1
             defender.die()
             attacker.justAttacked = True
             text += "The marshal has been assassinated."
 
         elif attacker.rank > defender.rank:
             attacker.position = defender.position
+            #if defender.name in defenderArmy.livingPossibleMovableRanks: defenderArmy.livingPossibleMovableRanks.remove(defender.name)
+            defenderArmy.nrOfLiving -= 1
+            defenderArmy.nrOfMoved -= 1
             defender.die()
             attacker.justAttacked = True
             text += "The %s was defeated." % defender.name
 
         elif attacker.rank == defender.rank:
+            #if defender.name in defenderArmy.livingPossibleMovableRanks: defenderArmy.livingPossibleMovableRanks.remove(defender.name)
+            defenderArmy.nrOfLiving -= 1
+            defenderArmy.nrOfMoved -= 1
+            #if attacker.name in attackerArmy.livingPossibleMovableRanks: attackerArmy.livingPossibleMovableRanks.remove(attacker.name)
+            attackerArmy.nrOfLiving -= 1
+            attackerArmy.nrOfMoved -= 1
             attacker.die()
             defender.die()
             text += "Both units died."
 
         else:
+            #if attacker.name in attackerArmy.livingPossibleMovableRanks: attackerArmy.livingPossibleMovableRanks.remove(attacker.name)
+            attackerArmy.nrOfLiving -= 1
+            attackerArmy.nrOfMoved -= 1
             attacker.die()
             text += "The %s was defeated." % attacker.name
 
@@ -991,11 +1088,11 @@ class Launcher():
         lblBrain = Label(self.top, text="Opponent:", anchor=E, width=10)
         self.blueBrainVar = StringVar(self.top)
         if py26:
-            mnuBrain = OptionMenu(self.top, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain")
+            mnuBrain = OptionMenu(self.top, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain", "SmartBrain2")
             mnuBrain.config(width=16)
         else:
             mnuBrain = Combobox(self.top, textvariable=self.blueBrainVar, state="readonly")
-            mnuBrain['values'] = ("randomBrain", "CarefulBrain", "SmartBrain")
+            mnuBrain['values'] = ("randomBrain", "CarefulBrain", "SmartBrain", "SmartBrain2")
         self.blueBrainVar.set("SmartBrain")
         lblBrain.grid(column=1, row=1, ipadx=6, ipady=2)
         mnuBrain.grid(column=2, row=1, padx=6)

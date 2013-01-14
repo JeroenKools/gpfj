@@ -1,7 +1,7 @@
 '''
 Created on 29 jun. 2012
 
-@author: Jeroen Kools
+@author: Fedde Burgers
 '''
 import Brain
 from constants import *
@@ -116,11 +116,12 @@ class Brain(Brain.Brain):
         elif tactic == 3: #Flag on back row and 3 bombs around it
             xpos = randint(2, BOARD_WIDTH-3)
             self.army.flagIsBombProtected = True
-
+            
             flagPos = (xpos, backrow)
             bombPos += [(xpos-1, backrow)]
             bombPos += [(xpos+1, backrow)]
             bombPos += [(xpos, backrow + direction)]
+            
 
         ####################################################################################################################################
         elif tactic == 4: #Flag behind a lake and some bombs around it
@@ -148,6 +149,7 @@ class Brain(Brain.Brain):
             positions.remove(sergp)
 
         # Bombs and flag are placed (possibly with some other pieces) and now the rest of the pieces is placed semi-random:
+
 
         # Scouts and bombs on front row and not behind the lakes:
         for column in range(BOARD_WIDTH):
@@ -189,10 +191,18 @@ class Brain(Brain.Brain):
         shuffle(order)
         enemyArmy = self.game.otherArmy(self.army.color)
         highestUnknown = enemyArmy.highestUnknown()
+        
+        # Probability that an unknown and unmoved piece is movable:
+        nrOfPieces = enemyArmy.nrOfMovable + enemyArmy.nrOfUnmovable
+        nrOfNotMovedMovable = enemyArmy.nrOfMovable - enemyArmy.nrOfKnownMovable - enemyArmy.nrOfUnknownMoved
+        nrOfNotMovedUnmovable = enemyArmy.nrOfUnmovable - enemyArmy.nrOfKnownUnmovable
+        nrOfNotMoved = nrOfNotMovedMovable + nrOfNotMovedUnmovable
+        probNotMovedIsMovable =  nrOfNotMovedMovable / nrOfNotMoved
+        probNotMovedIsNotMovable = nrOfNotMovedUnmovable / nrOfNotMoved
+        
+        probUnknownUnmovedIsMovable = (len(enemyArmy.livingPossibleMovableRanks) - enemyArmy.nrOfMoved) / (enemyArmy.nrOfLiving - enemyArmy.nrOfMoved)
 
         for i in order:
-            if move: break
-
             unit = self.army.army[i]
             if not unit.canMove or not unit.alive:
                 continue
@@ -237,6 +247,7 @@ class Brain(Brain.Brain):
                                 alreadyMovedKillingMoves += [((col,row), direction)]
                             else:
                                 notMovedKillingMoves += [((col,row), direction)]
+                        #elif 
                         elif not target.isKnown and unit.walkFar:       # our unit is a scout
                             if unit.hasMoved:
                                 alreadyMovedKillingMoves += [((col,row), direction)]
@@ -290,22 +301,12 @@ class Brain(Brain.Brain):
             move = choice(notMovedNotKillingMoves)
             return move
 
-
-
-
-
                     
-                        
-
-
-
-
-                            
+                                     
         # use randombrain as a last resort - maybe player has encircled us with unknown units?
         #print 'this is my last resort!'
         tempBrain = randomBrain.Brain(self.game, self.army)
         return tempBrain.findMove()
-
 
     def observe(self, armies):
         pass

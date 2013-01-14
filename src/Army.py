@@ -11,6 +11,19 @@ class Army:
 
         self.armyType = armyType
         self.color = color
+        self.flagIsBombProtected = False
+        self.livingPossibleMovableRanks = []
+        self.livingPossibleUnmovableRanks = []
+        self.nrOfMoved = 0
+        self.nrOfLiving = 0
+        #self.nrOfKnownUnmovable = 0
+        self.nrOfUnknownMoved = 0
+        self.nrOfKnownMovable = 0
+        self.nrOfKnownUnmovable = 0
+        self.nrOfMovable = 0
+        self.nrOfUnmovable = 0
+
+        self.carefullness = 0.9
 
         if armyType == "classical":
             self.army = [
@@ -49,6 +62,21 @@ class Army:
 
         for unit in self.army:
             unit.color = self.color
+            self.nrOfLiving += 1
+
+        for unit in self.army:
+            if unit.canMove:
+                self.livingPossibleMovableRanks.append(unit.name)
+                self.nrOfMovable += 1
+            else:
+                self.livingPossibleUnmovableRanks.append(unit.name)
+                self.nrOfUnmovable += 1
+
+        for unit in self.army:
+            unit.possibleMovableRanks = list(self.livingPossibleMovableRanks)
+            unit.possibleUnmovableRanks = list(self.livingPossibleUnmovableRanks)
+
+
 
     def getUnit(self, x, y):
         for unit in self.army:
@@ -92,7 +120,11 @@ class Unit:
         self.alive = True
         self.justAttacked = False   # enemy units who just attacked are revealed
         self.hasMoved = False       # if a unit has moved, the AI remembers
+        self.hasMovedFar = False
         self.isKnown = False          # whether the AI already knows this piece's rank 
+        self.possibleMovableRanks = []
+        self.possibleUnmovableRanks = [] 
+        
         self.sortOrder = 0
 
     def getPosition(self):
