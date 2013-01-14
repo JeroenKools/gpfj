@@ -456,7 +456,7 @@ class Application:
         self.redUnitPanel.create_rectangle(0, 0, 10 * TILE_PIX, 4 * TILE_PIX, fill=UNIT_PANEL_COLOR)
 
         unplacedRed = 0
-        for unit in self.redArmy.army:
+        for unit in sorted(self.redArmy.army, key=lambda x: x.sortOrder):
             if unit.isOffBoard():
                 x = unplacedRed % 10
                 y = unplacedRed / 10
@@ -465,7 +465,7 @@ class Application:
                 unplacedRed += 1
 
         unplacedBlue = 0
-        for unit in self.blueArmy.army:
+        for unit in sorted(self.blueArmy.army, key=lambda x: x.sortOrder):
             if unit.isOffBoard():
                 x = unplacedBlue % 10
                 y = unplacedBlue / 10

@@ -93,6 +93,7 @@ class Unit:
         self.justAttacked = False   # enemy units who just attacked are revealed
         self.hasMoved = False       # if a unit has moved, the AI remembers
         self.isKnown = False          # whether the AI already knows this piece's rank 
+        self.sortOrder = 0
 
     def getPosition(self):
         return self.position
@@ -141,83 +142,94 @@ class Icons:
 
 class Marshal(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Marshal"
         self.rank = 10
-        Unit.__init__(self, position)
+        self.sortOrder = 1
 
 class General(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "General"
         self.rank = 9
-        Unit.__init__(self, position)
+        self.sortOrder = 2
 
 class Colonel(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Colonel"
         self.rank = 8
-        Unit.__init__(self, position)
-
+        self.sortOrder = 3
 
 class Major(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Major"
         self.rank = 7
-        Unit.__init__(self, position)
+        self.sortOrder = 4
 
 class Captain(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Captain"
         self.rank = 6
-        Unit.__init__(self, position)
+        self.sortOrder = 5
 
 class Lieutenant(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Lieutenant"
         self.rank = 5
-        Unit.__init__(self, position)
+        self.sortOrder = 6
 
 class Sergeant(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Sergeant"
         self.rank = 4
-        Unit.__init__(self, position)
+        self.sortOrder = 7
 
 class Miner(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Miner"
         self.rank = 3
-        Unit.__init__(self, position)
+        self.sortOrder = 8
 
         self.canDefuseBomb = True
 
 class Scout(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Scout"
         self.rank = 2
-        Unit.__init__(self, position)
+        self.sortOrder = 9
 
         self.walkFar = True # special scout ability!
 
 class Spy(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Spy"
         self.rank = 1
-        Unit.__init__(self, position)
+        self.sortOrder = 10
 
         self.canKillMarshal = True
 
 class Bomb(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Bomb"
         self.rank = 99
-        Unit.__init__(self, position)
+        self.sortOrder = 11
 
         self.canMove = False
 
 class Flag(Unit):
     def __init__(self, position=None):
+        Unit.__init__(self, position)
         self.name = "Flag"
         self.rank = 0
-        Unit.__init__(self, position)
+        self.sortOrder = 0
 
         self.canMove = False
