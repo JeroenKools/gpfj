@@ -6,7 +6,7 @@ Created on 28 jun. 2012
 '''
 
 GAME_NAME = 'Kindral'      # Kindral? Praetor? Napoleon? Austerlitz?
-VERSION = 0.47             # Game version
+VERSION = 0.48             # Game version
 DEBUG = False              # If True, show enemy units' ranks (cheat/debug)
 
 AUTHORS = "Jeroen Kools & Fedde Burgers"

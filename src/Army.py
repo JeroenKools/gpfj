@@ -101,7 +101,7 @@ class Army:
             if unit.alive and not unit.isKnown and unit.rank > highest:
                 highest = unit.rank
         return highest
-    
+
     def nrAlive(self):
         """Return the number of units in the army that have not been defeated"""
         alive = 0
@@ -110,13 +110,16 @@ class Army:
         return alive
 
 class Unit:
+
+    # default abilities
+    walkFar = False        # scout ability
+    canKillMarshal = False # spy ability
+    canDefuseBomb = False  # canDefuseBomb ability
+    canMove = True
+
     def __init__(self, position=None):
         self.position = position
 
-        self.walkFar = False        # scout ability
-        self.canKillMarshal = False # spy ability
-        self.canDefuseBomb = False  # canDefuseBomb ability
-        self.canMove = True
         self.alive = True
         self.justAttacked = False   # enemy units who just attacked are revealed
         self.hasMoved = False       # if a unit has moved, the AI remembers
@@ -143,16 +146,16 @@ class Unit:
     def die(self):
         self.alive = False
         self.position = None
-        
+
     def isMovable(self):
         return self.canMove
 
     def __str__(self):
         if self.position:
-            return "%s at %s" % (self.name, self.position)
+            return "a %s at %s" % (self.name, self.position)
         else:
             return "Off-board %s" % (self.name)
-        
+
 class Icons:
     def __init__(self, tilepix):
         self.icons = {}
@@ -162,106 +165,111 @@ class Icons:
             icon = icon.resize((2 * tilepix, 2 * tilepix), Image.BICUBIC)
             icon = icon.resize((tilepix, tilepix), Image.ANTIALIAS)
             self.icons[rank] = ImageTk.PhotoImage(icon)
-            
+
     def getIcon(self, rank):
         return self.icons[rank]
-    
-    def getImage(self, rank, size):   
+
+    def getImage(self, rank, size):
         img = Image.open("%s/%s.%s" % (ICON_DIR, rank, ICON_TYPE))
         img = img.resize((2 * size, 2 * size), Image.BICUBIC)
         img = img.resize((size, size), Image.ANTIALIAS)
-        return img     
+        return img
 
 class Marshal(Unit):
+    name = "Marshal"
+    rank = 10
+    sortOrder = 1
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Marshal"
-        self.rank = 10
-        self.sortOrder = 1
 
 class General(Unit):
+    name = "General"
+    rank = 9
+    sortOrder = 2
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "General"
-        self.rank = 9
-        self.sortOrder = 2
 
 class Colonel(Unit):
+    name = "Colonel"
+    rank = 8
+    sortOrder = 3
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Colonel"
-        self.rank = 8
-        self.sortOrder = 3
 
 class Major(Unit):
+    name = "Major"
+    rank = 7
+    sortOrder = 4
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Major"
-        self.rank = 7
-        self.sortOrder = 4
 
 class Captain(Unit):
+    name = "Captain"
+    rank = 6
+    sortOrder = 5
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Captain"
-        self.rank = 6
-        self.sortOrder = 5
 
 class Lieutenant(Unit):
+    name = "Lieutenant"
+    rank = 5
+    sortOrder = 6
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Lieutenant"
-        self.rank = 5
-        self.sortOrder = 6
 
 class Sergeant(Unit):
+    name = "Sergeant"
+    rank = 4
+    sortOrder = 7
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Sergeant"
-        self.rank = 4
-        self.sortOrder = 7
 
 class Miner(Unit):
+    name = "Miner"
+    rank = 3
+    sortOrder = 8
+
+    canDefuseBomb = True
+
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Miner"
-        self.rank = 3
-        self.sortOrder = 8
-
-        self.canDefuseBomb = True
 
 class Scout(Unit):
+    name = "Scout"
+    rank = 2
+    sortOrder = 9
+
+    walkFar = True # special scout ability!    
+
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Scout"
-        self.rank = 2
-        self.sortOrder = 9
-
-        self.walkFar = True # special scout ability!
 
 class Spy(Unit):
+    name = "Spy"
+    rank = 1
+    sortOrder = 10
+
+    canKillMarshal = True
+
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Spy"
-        self.rank = 1
-        self.sortOrder = 10
-
-        self.canKillMarshal = True
 
 class Bomb(Unit):
+    name = "Bomb"
+    rank = 99
+    sortOrder = 11
+
+    canMove = False
+
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Bomb"
-        self.rank = 99
-        self.sortOrder = 11
-
-        self.canMove = False
 
 class Flag(Unit):
+    name = "Flag"
+    rank = 0
+    sortOrder = 0
+
+    canMove = False
+
     def __init__(self, position=None):
         Unit.__init__(self, position)
-        self.name = "Flag"
-        self.rank = 0
-        self.sortOrder = 0
-
-        self.canMove = False
