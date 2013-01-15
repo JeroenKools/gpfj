@@ -5,10 +5,7 @@ Developed for the course "Game Programming" at the University of Amsterdam
 2012
 '''
 
-from Army import Army, Icons
-from constants import *         #@UnusedWildImport
-from brains import *
-
+# Standard Python modules
 from math import sin, pi
 import webbrowser
 import os
@@ -16,27 +13,35 @@ import pickle
 import datetime
 from textwrap import fill, dedent, TextWrapper
 from random import randint, choice
-import sys
-import platform
+import platform as pf
+import pkgutil
 
-pltfrm = platform.system()
-if not pltfrm in ["Windows", "Linux", "Darwin"]:
-    pltfrm = "Other"
-
-py26 = True
-if sys.version_info[:2] == (2, 7):
-    py26 = False
-
-from Tkinter import *
-if not py26:
-    from ttk import Combobox
-
+# Tkinter and PIL for GUI and graphics
+from Tkinter import *       #@UnusedWildImport
 import tkMessageBox
 import tkFileDialog
 import tkFont
 import Image, ImageTk
 
-if pltfrm == "Windows":
+# Modules that are part of the game
+from Army import Army, Icons
+from constants import *     #@UnusedWildImport
+from brains import *        #@UnusedWildImport
+BRAINLIST = [module[1] for module in pkgutil.iter_modules(['brains']) if not module[1] == "Brain"]
+
+# Some system dependent imports
+platform = pf.system()
+if not platform in ["Windows", "Linux", "Darwin"]:
+    platform = "Other"
+
+py26 = True
+if sys.version_info[:2] == (2, 7):
+    py26 = False
+
+if not py26:
+    from ttk import Combobox
+
+if platform == "Windows":
     import winsound
     import mp3play #@UnresolvedImport
     canPlaySound = True
@@ -46,7 +51,10 @@ else:
     canPlayMusic = False
 
 def setIcon(window, icon):
-    if not pltfrm == "Linux":
+    """Set the icon of a Tk root or toplevel window to a given .ico or .xbm file, 
+    depending on the operating system""" 
+    #TODO: Mac  
+    if not platform == "Linux":
         window.wm_iconbitmap("%s/%s.ico" % (ICON_DIR, icon))
     else:
         window.wm_iconbitmap("@%s/%s.xbm" % (ICON_DIR, icon))
@@ -243,12 +251,12 @@ class Application:
         lblBrain = Label(self.settingsWindow, text="Opponent Brain")
         self.blueBrainVar = StringVar(self.settingsWindow)
         if py26:
-            mnuBrain = OptionMenu(self.settingsWindow, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain", "SmartBrain2")
+            mnuBrain = OptionMenu(self.settingsWindow, self.blueBrainVar, *BRAINLIST)
             mnuBrain.config(width=20)
         else:
             mnuBrain = Combobox(self.settingsWindow, textvariable=self.blueBrainVar, state="readonly",
                             justify="center", width=20)
-            mnuBrain['values'] = ("randomBrain", "CarefulBrain", "SmartBrain", "SmartBrain2")
+            mnuBrain['values'] = BRAINLIST
         self.blueBrainVar.set(self.blueBrainName)
         lblBrain.grid(column=0, row=0, sticky="ew", ipadx=10, ipady=10)
         mnuBrain.grid(column=1, row=0, sticky="ew", padx=10)
@@ -1099,11 +1107,11 @@ class Launcher():
         lblBrain = Label(self.top, text="Opponent:", anchor=E, width=10)
         self.blueBrainVar = StringVar(self.top)
         if py26:
-            mnuBrain = OptionMenu(self.top, self.blueBrainVar, "randomBrain", "CarefulBrain", "SmartBrain", "SmartBrain2")
+            mnuBrain = OptionMenu(self.top, self.blueBrainVar, *BRAINLIST)
             mnuBrain.config(width=16)
         else:
             mnuBrain = Combobox(self.top, textvariable=self.blueBrainVar, state="readonly")
-            mnuBrain['values'] = ("randomBrain", "CarefulBrain", "SmartBrain", "SmartBrain2")
+            mnuBrain['values'] = BRAINLIST
         self.blueBrainVar.set("SmartBrain")
         lblBrain.grid(column=1, row=1, ipadx=6, ipady=2)
         mnuBrain.grid(column=2, row=1, padx=6)
