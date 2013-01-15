@@ -66,8 +66,20 @@ class Brain(Brain.Brain):
                 south = (col, row + d)
                 west = (col - d, row)
                 east = (col + d, row)
+                
+                nw = (col - d, row - d)
+                sw = (col - d, row + d)
+                ne = (col + d, row - d)
+                se = (col + d, row + d)
 
                 directions += [direction for direction in [north, south, west, east] if
+                              direction[0] >= 0 and direction[0] < BOARD_WIDTH and
+                              direction[1] >= 0 and direction[1] < BOARD_WIDTH and
+                              not self.army.getUnit(direction[0], direction[1]) and
+                              self.game.legalMove(unit, direction[0], direction[1])]
+                
+                if self.game.diagonal:
+                    directions += [direction for direction in [nw, sw, ne, se] if
                               direction[0] >= 0 and direction[0] < BOARD_WIDTH and
                               direction[1] >= 0 and direction[1] < BOARD_WIDTH and
                               not self.army.getUnit(direction[0], direction[1]) and

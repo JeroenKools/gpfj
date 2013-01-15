@@ -61,12 +61,13 @@ def setIcon(window, icon):
 
 class Application:
     """Main game and UI class"""
-    def __init__(self, root, brain="SmartBrain", difficulty="Normal", size="Normal"):
+    def __init__(self, root, brain="SmartBrain", difficulty="Normal", size="Normal", diagonal=True):
         self.root = root
         self.blueBrain = eval(brain)
         self.redBrain = 0
         self.blueBrainName = brain
         self.difficulty = difficulty
+        self.diagonal = diagonal
 
         global BOARD_WIDTH, POOLS, TILE_PIX
         BOARD_WIDTH = SIZE_DICT[size][0]
@@ -755,28 +756,43 @@ class Application:
             return True
 
         if unit.walkFar:
-            if ux != x and uy != y:
-                return False
+            if dx != 0 and dy != 0:
+                if self.diagonal:
+                    if dx != dy:
+                        return False
+                else:
+                    return False
 
             if (dx + dy) == 0:
                 return False
 
-            if uy == y:
+            if dx > 0 and dy == 0:
                 x0 = min(x, ux)
                 x1 = max(x, ux)
                 for i in range(x0 + 1, x1):
                     if self.isPool(i, y) or self.getUnit(i, y):
                         return False
 
-            elif ux == x:
+            elif dy > 0 and dx == 0:
                 y0 = min(y, uy)
                 y1 = max(y, uy)
                 for i in range(y0 + 1, y1):
                     if self.isPool(x, i) or self.getUnit(x, i):
                         return False
-
+                    
+            else:
+                x0 = min(x, ux)
+                y0 = min(y, uy)
+                distance = abs(x-ux)
+                for i in range(1, distance):
+                    if self.isPool(x0+i, y0+i) or self.getUnit(x0+i, y0+i):
+                        return False
         else:
-            if (dx + dy) != 1:
+            s = dx + dy
+            if self.diagonal:
+                if s == 0 or max(dx,dy) > 1:
+                    return False 
+            elif s != 1:
                 return False
 
         return True
@@ -1082,6 +1098,10 @@ class Launcher():
         self.top.bind("<Escape>", self.exit)
         setIcon(self.top, "flag")
         self.top.protocol("WM_DELETE_WINDOW", self.exit)
+        
+        menupadx = 5
+        menuwidth = 10
+        buttonpadx = 12
 
         Label(self.top).grid()
 
@@ -1096,19 +1116,19 @@ class Launcher():
         self.playMusic()
 
         self.playbutton = Button(self.top, text="Play", width=10, padx=20, command=self.startGame)
-        self.playbutton.grid(row=1, column=0, padx=10, pady=5, sticky=W)
+        self.playbutton.grid(row=1, column=0, padx=buttonpadx, pady=5, sticky=W)
 
         self.loadButton = Button(self.top, text="Load", width=10, padx=20, command=self.loadGame)
-        self.loadButton.grid(row=2, column=0, padx=10, pady=5, sticky=W)
+        self.loadButton.grid(row=2, column=0, padx=buttonpadx, pady=5, sticky=W)
 
         self.exitbutton = Button(self.top, text="Exit", width=10, padx=20, command=self.exit)
-        self.exitbutton.grid(row=2, column=5, padx=10, pady=5, sticky=E)
+        self.exitbutton.grid(row=2, column=5, padx=buttonpadx, pady=5, sticky=E)
 
         lblBrain = Label(self.top, text="Opponent:", anchor=E, width=10)
         self.blueBrainVar = StringVar(self.top)
         if py26:
             mnuBrain = OptionMenu(self.top, self.blueBrainVar, *BRAINLIST)
-            mnuBrain.config(width=16)
+            mnuBrain.config(width=menuwidth)
         else:
             mnuBrain = Combobox(self.top, textvariable=self.blueBrainVar, state="readonly")
             mnuBrain['values'] = BRAINLIST
@@ -1120,7 +1140,7 @@ class Launcher():
         self.difficultyVar = StringVar(self.top)
         if py26:
             mnuDiff = OptionMenu(self.top, self.difficultyVar, "Normal")
-            mnuDiff.config(width=16)
+            mnuDiff.config(width=menuwidth)
         else:
             mnuDiff = Combobox(self.top, textvariable=self.difficultyVar, state="readonly")
             mnuDiff['values'] = ("Normal")
@@ -1128,17 +1148,29 @@ class Launcher():
         lblDiff.grid(column=1, row=2, ipadx=6, ipady=2)
         mnuDiff.grid(column=2, row=2, padx=6)
 
-        lblSize = Label(self.top, text="Size:", anchor=E, width=10)
+        lblSize = Label(self.top, text="Board size", anchor=E, width=10)
         self.sizeVar = StringVar(self.top)
         if py26:
             mnuSize = OptionMenu(self.top, self.sizeVar, "Small", "Normal", "Large", "Extra Large")
-            mnuSize.config(width=16)
+            mnuSize.config(width=menuwidth)
         else:
             mnuSize = Combobox(self.top, textvariable=self.sizeVar, state="readonly")
             mnuSize['values'] = ("Small", "Normal", "Large", "Extra Large")
         self.sizeVar.set("Normal")
         lblSize.grid(column=3, row=1, ipadx=6, ipady=2)
         mnuSize.grid(column=4, row=1, padx=6)
+        
+        lblDiagonal = Label(self.top, text="Diagonal moves", anchor=E, width=10)
+        self.diagonalVar = StringVar(self.top)
+        if py26:
+            mnuDiagonal = OptionMenu(self.top, self.diagonalVar, "Yes", "No")
+            mnuDiagonal.config(width=menuwidth)
+        else:
+            mnuDiagonal= Combobox(self.top, textvariable=self.diagonalVar, state="readonly")
+            mnuDiagonal['values'] = ("Yes", "No")
+        self.diagonalVar.set("No")
+        lblDiagonal.grid(column=3, row=2, ipadx=6, ipady=2)
+        mnuDiagonal.grid(column=4, row=2, padx=6)        
 
         self.top.rowconfigure(0, weight=1)
         self.top.columnconfigure(5, weight=1)
@@ -1146,7 +1178,8 @@ class Launcher():
     def startGame(self):
         """Start the main interface with the options chosen in the launcher, and close the launcher window"""
         self.top.destroy()
-        Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(), self.sizeVar.get())
+        Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(),
+                    self.sizeVar.get(), self.diagonalVar.get())
         self.root.update()
         self.root.deiconify()
 
