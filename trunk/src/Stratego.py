@@ -6,8 +6,8 @@ Developed for the course "Game Programming" at the University of Amsterdam
 '''
 
 from Army import Army, Icons
-from constants import *                      #@UnusedWildImport
-import randomBrain, SmartBrain, SmartBrain2, CarefulBrain #@UnusedImport
+from constants import *         #@UnusedWildImport
+from brains import *
 
 from math import sin, pi
 import webbrowser
@@ -17,6 +17,11 @@ import datetime
 from textwrap import fill, dedent, TextWrapper
 from random import randint, choice
 import sys
+import platform
+
+pltfrm = platform.system()
+if not pltfrm in ["Windows", "Linux", "Darwin"]:
+    pltfrm = "Other"
 
 py26 = True
 if sys.version_info[:2] == (2, 7):
@@ -25,20 +30,26 @@ if sys.version_info[:2] == (2, 7):
 from Tkinter import *
 if not py26:
     from ttk import Combobox
+
 import tkMessageBox
 import tkFileDialog
 import tkFont
 import Image, ImageTk
-try:
+
+if pltfrm == "Windows":
     import winsound
+    import mp3play #@UnresolvedImport
     canPlaySound = True
-except: # not on Windows
-    canPlaySound = False
-try:
-    import mp3play
     canPlayMusic = True
-except:
+else:
+    canPlaySound = False
     canPlayMusic = False
+
+def setIcon(window, icon):
+    if not pltfrm == "Linux":
+        window.wm_iconbitmap("%s/%s.ico" % (ICON_DIR, icon))
+    else:
+        window.wm_iconbitmap("@%s/%s.xbm" % (ICON_DIR, icon))
 
 class Application:
     """Main game and UI class"""
@@ -186,7 +197,7 @@ class Application:
                                                     filetypes=[('%s saves' % GAME_NAME, '.sav')],
                                                       initialdir=os.getcwd())
         if loadFilename:
-            with open(loadFilename, 'r') as f:
+            with open(loadFilename, 'rU') as f:
                 save = pickle.load(f)
                 BOARD_WIDTH = save['BOARD_WIDTH']
                 self.blueArmy = save['self.blueArmy']
@@ -297,7 +308,7 @@ class Application:
         """Load statistics of past games from the stats file"""
 
         if os.path.exists('stats.cfg'):
-            statsfile = open('stats.cfg', 'r')
+            statsfile = open('stats.cfg', 'rU')
             self.stats = pickle.load(statsfile)
             self.stats.lastChecked = datetime.datetime.now()
             statsfile.close()
@@ -315,7 +326,7 @@ class Application:
         timestr = '%s days, %i:%02i:%02i' % (t.days, hours, minutes, seconds)
 
         self.statsWindow = Toplevel(width=300)
-        self.statsWindow.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+        setIcon(self.statsWindow, "flag")
         lblNames = Label(self.statsWindow, justify=LEFT,
                          text=dedent("""
                          Games played:
@@ -873,7 +884,7 @@ class Application:
 
             top = Toplevel(width=300)
             top.title("Battle result")
-            top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+            setIcon(top, "flag")
 
             atkImg = ImageTk.PhotoImage(self.unitIcons.getImage(attacker.name, 120))
             atkLbl = Label(top, image=atkImg)
@@ -954,7 +965,7 @@ class Application:
         self.won = True
         self.drawMap()
         top = Toplevel(width=300)
-        top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+        setIcon(top, "flag")
         flagimg1 = Image.open("%s/%s.%s" % (ICON_DIR, "flag", ICON_TYPE))
         flagimg2 = ImageTk.PhotoImage(flagimg1)
         lbl = Label(top, image=flagimg2)
@@ -1061,7 +1072,7 @@ class Launcher():
         self.top.geometry("+50+50")
         self.top.title("%s v%s" % (GAME_NAME, VERSION))
         self.top.bind("<Escape>", self.exit)
-        self.top.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+        setIcon(self.top, "flag")
         self.top.protocol("WM_DELETE_WINDOW", self.exit)
 
         Label(self.top).grid()
@@ -1169,5 +1180,5 @@ if __name__ == "__main__":
     root.withdraw()
     Launcher(root)
     root.title("%s %s" % (GAME_NAME, VERSION))
-    root.wm_iconbitmap("%s/flag.ico" % ICON_DIR)
+    setIcon(root, "flag")
     root.mainloop()
