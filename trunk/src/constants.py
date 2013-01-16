@@ -6,7 +6,7 @@ Created on 28 jun. 2012
 """
 
 GAME_NAME = "Kindral"      # Kindral? Praetor? Napoleon? Austerlitz?
-VERSION = "0.50"           # Game version
+VERSION = "0.51"           # Game version
 DEBUG = False              # If True, show enemy units' ranks (cheat/debug)
 
 AUTHORS = "Jeroen Kools & Fedde Burgers"
@@ -51,8 +51,11 @@ TILE_PIX = 50           # Tile size in pixels, tested between 10 and 80. Recomme
 TILE_BORDER = 3         # Width of the tile highlights/borders
 POOLS = 2               # Number of pools, classic Stratego value is 2
 
+### LAUNCHER SETTINGS
 DEFAULTBRAIN = "SurpriseBrain"
-
+DEFAULTDIFFICULTY = "Normal"
+FORGETCHANCEEASY = 0.1
+DEFAULTSIZE = "Normal"
 SIZE_DICT = {           # Preset values for BOARD_WIDTH, POOLS and TILE_PIX, to be selected from launcher menu
              "Small":  [8, 2, 60],
              "Normal": [10, 2, 50],
