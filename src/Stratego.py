@@ -1149,7 +1149,8 @@ class Launcher():
 
     def startGame(self):
         """Start the main interface with the options chosen in the launcher, and close the launcher window"""
-        self.clip.stop()
+        if canPlayMusic:
+            self.clip.stop()
         self.top.destroy()
         Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(),
                     self.sizeVar.get(), self.diagonalVar.get())
