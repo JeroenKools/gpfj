@@ -12,7 +12,7 @@ import os
 import pickle
 import datetime
 from textwrap import fill, dedent, TextWrapper
-from random import randint, choice
+from random import randint, choice, random
 import platform as pf
 import pkgutil
 
@@ -263,7 +263,6 @@ class Application:
         lblBrain.grid(column=0, row=0, sticky="ew", ipadx=10, ipady=10)
         mnuBrain.grid(column=1, row=0, sticky="ew", padx=10)
 
-        # DIFFICULTY #TODO: implement difficulty in Brains
         lblDifficulty = Label(self.settingsWindow, text="Difficulty")
         self.difficultyVar = StringVar(self.settingsWindow)
         if py26:
@@ -727,6 +726,11 @@ class Application:
                 self.victory(self.turn, True)
                 return
 
+            if self.difficulty == "Easy":
+                for unit in self.redArmy.army:
+                    if unit.isKnown and random() <= FORGETCHANCEEASY:
+                        unit.isKnown = False
+
             self.setStatusBar("%s moves unit at (%s,%s) to (%s,%s)" % (self.turn,
                                                                        oldlocation[0], oldlocation[1],
                                                                        move[0], move[1]))
@@ -1136,7 +1140,7 @@ class Launcher():
         self.addMenu("Opponent", self.blueBrainVar, BRAINLIST, DEFAULTBRAIN)
 
         self.difficultyVar = StringVar(self.top)
-        self.addMenu("Difficulty", self.difficultyVar, ["Normal"], "Normal")
+        self.addMenu("Difficulty", self.difficultyVar, ["Easy", "Normal"], "Normal")
 
         self.sizeVar = StringVar(self.top)
         self.addMenu("Board size", self.sizeVar, ["Small", "Normal", "Large", "Extra Large"], "Normal")
