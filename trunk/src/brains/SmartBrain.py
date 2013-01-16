@@ -4,6 +4,7 @@ Created on 29 jun. 2012
 @author: Jeroen Kools
 '''
 import Brain
+import randomBrain
 from constants import *
 from random import shuffle, choice, randint
 import constants
@@ -216,7 +217,9 @@ class Brain(Brain.Brain):
                 # 
                 for direction in [north, south, west, east]:
                     target = self.game.getUnit(direction[0], direction[1])
-                    if self.game.legalMove(unit, direction[0], direction[1]) and target and target.color != unit.color and direction[0] >= 0 and direction[0] < BOARD_WIDTH and direction[1] >= 0 and direction[1] < BOARD_WIDTH: # target is enemy and known
+                    if self.game.legalMove(unit, direction[0], direction[1]) and target \
+                    and target.color != unit.color and direction[0] >= 0 and direction[0] < BOARD_WIDTH and \
+                    direction[1] >= 0 and direction[1] < BOARD_WIDTH: # target is enemy and known
                         dist2Flag = abs(target.position[0]-self.army.army[0].position[0]) + abs(target.position[1]-self.army.army[0].position[1])
                         if target.isKnown:
                             if dist2Flag < 3 and target.rank < unit.rank:

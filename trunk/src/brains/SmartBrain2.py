@@ -4,6 +4,7 @@ Created on 29 jun. 2012
 @author: Fedde Burgers
 '''
 import Brain
+import randomBrain
 from constants import *
 from random import shuffle, choice, randint
 import constants

@@ -116,6 +116,7 @@ class Unit:
     canKillMarshal = False # spy ability
     canDefuseBomb = False  # canDefuseBomb ability
     canMove = True
+    sortOrder = 0
 
     def __init__(self, position=None):
         self.position = position
@@ -127,8 +128,6 @@ class Unit:
         self.isKnown = False          # whether the AI already knows this piece's rank 
         self.possibleMovableRanks = []
         self.possibleUnmovableRanks = [] 
-        
-        self.sortOrder = 0
 
     def getPosition(self):
         return self.position
@@ -161,7 +160,7 @@ class Icons:
         self.icons = {}
         for rank in ['Marshal', 'General', 'Colonel', 'Major', 'Captain', 'Lieutenant',
                      'Sergeant', 'Miner', 'Scout', 'Bomb', 'Spy', 'Flag']:
-            icon = Image.open("%s/%s.%s" % (ICON_DIR, rank, ICON_TYPE))
+            icon = Image.open("%s/%s.%s" % (ICON_DIR, rank.lower(), ICON_TYPE))
             icon = icon.resize((2 * tilepix, 2 * tilepix), Image.BICUBIC)
             icon = icon.resize((tilepix, tilepix), Image.ANTIALIAS)
             self.icons[rank] = ImageTk.PhotoImage(icon)

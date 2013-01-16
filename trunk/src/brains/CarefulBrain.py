@@ -31,7 +31,6 @@ class Brain(randomBrain.Brain):
             self.rows = range(BOARD_WIDTH - 1, BOARD_WIDTH - self.armyHeight - 1, -1)
 
         self.flagpos = self.placeFlag()
-        print self.flagpos
         flag[0].setPosition(self.flagpos[0], self.flagpos[1])
 
         self.placeBombs(bombs)
