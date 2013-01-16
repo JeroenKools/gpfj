@@ -169,7 +169,7 @@ class Icons:
         return self.icons[rank]
 
     def getImage(self, rank, size):
-        img = Image.open("%s/%s.%s" % (ICON_DIR, rank, ICON_TYPE))
+        img = Image.open("%s/%s.%s" % (ICON_DIR, rank.lower(), ICON_TYPE))
         img = img.resize((2 * size, 2 * size), Image.BICUBIC)
         img = img.resize((size, size), Image.ANTIALIAS)
         return img
