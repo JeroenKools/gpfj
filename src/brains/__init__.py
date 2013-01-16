@@ -1,1 +1,8 @@
-__all__ = ["Brain", "CarefulBrain", "randomBrain", "SmartBrain", "SmartBrain2"]
+__all__ = ["Brain",
+           "AggressiveBrain",
+           "CarefulBrain",
+           "MiniMaxBrain",
+           "randomBrain",
+           "SmartBrain",
+           "SmartBrain2",
+           "SurpriseBrain"]

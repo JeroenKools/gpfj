@@ -1,20 +1,20 @@
-'''
+"""
 Constants module
 Created on 28 jun. 2012
 
 @author: Jeroen Kools and Fedde Burgers
-'''
+"""
 
-GAME_NAME = 'Kindral'      # Kindral? Praetor? Napoleon? Austerlitz?
-VERSION = 0.49             # Game version
+GAME_NAME = "Kindral"      # Kindral? Praetor? Napoleon? Austerlitz?
+VERSION = "0.50"           # Game version
 DEBUG = False              # If True, show enemy units' ranks (cheat/debug)
 
 AUTHORS = "Jeroen Kools & Fedde Burgers"
 URL = "http://code.google.com/p/gpfj"
 
 ## GRAPHICS ##
-ICON_DIR = 'uniticons'
-ICON_TYPE = 'png'
+ICON_DIR = "uniticons"
+ICON_TYPE = "png"
 TERRAIN_DIR = "terrain"
 LAND_TEXTURE = "grass3.jpg"
 WATER_TEXTURE = "water.jpg"
@@ -30,7 +30,7 @@ SELECTED_RED_PLAYER_COLOR = "#E00"
 SHADOW_RED_COLOR = "#600"
 
 BLUE_PLAYER_COLOR = "#00A"
-SELECTED_BLUE_PLAYER_COLOR = '#00E'
+SELECTED_BLUE_PLAYER_COLOR = "#00E"
 SHADOW_BLUE_COLOR = "#006"
 
 ## AUDIO ##
@@ -50,6 +50,8 @@ BOARD_WIDTH = 10        # Board size in tiles, classic Stratego value is 10, tes
 TILE_PIX = 50           # Tile size in pixels, tested between 10 and 80. Recommended: 50
 TILE_BORDER = 3         # Width of the tile highlights/borders
 POOLS = 2               # Number of pools, classic Stratego value is 2
+
+DEFAULTBRAIN = "SurpriseBrain"
 
 SIZE_DICT = {           # Preset values for BOARD_WIDTH, POOLS and TILE_PIX, to be selected from launcher menu
              "Small":  [8, 2, 60],

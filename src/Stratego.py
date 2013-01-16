@@ -52,7 +52,7 @@ else:
 
 def setIcon(window, icon):
     """Set the icon of a Tk root or toplevel window to a given .ico or .xbm file, 
-    depending on the operating system""" 
+    depending on the operating system"""
     #TODO: Mac  
     if not platform == "Linux":
         window.wm_iconbitmap("%s/%s.ico" % (ICON_DIR, icon))
@@ -61,13 +61,13 @@ def setIcon(window, icon):
 
 class Application:
     """Main game and UI class"""
-    def __init__(self, root, brain="SmartBrain", difficulty="Normal", size="Normal", diagonal=True):
+    def __init__(self, root, brain="SmartBrain", difficulty="Normal", size="Normal", diagonal=False):
         self.root = root
         self.blueBrain = eval(brain)
         self.redBrain = 0
         self.blueBrainName = brain
         self.difficulty = difficulty
-        self.diagonal = diagonal
+        self.diagonal = (diagonal == "Yes")
 
         global BOARD_WIDTH, POOLS, TILE_PIX
         BOARD_WIDTH = SIZE_DICT[size][0]
@@ -174,6 +174,7 @@ class Application:
         self.placingUnit = False
         self.movingUnit = False
         self.turn = self.firstMove
+        self.turnNr = 1
         self.won = False
         self.started = False
 
@@ -345,6 +346,7 @@ class Application:
                          
                          Longest winning streak:
                          Lowest casualties:
+                         Least moves:
                          
                          Total time played:"""))
         lblNames.grid(column=0, row=0, sticky="ew", ipadx=35, ipady=10)
@@ -358,11 +360,13 @@ class Application:
                          
                          %i
                          %i
+                         %i
                          
                          %s""" % (self.stats.gamesPlayed, self.stats.gamesWon, self.stats.gamesLost,
                                   100. * self.stats.gamesWon / max(1, self.stats.gamesPlayed),
                                   self.stats.longestStreak,
                                   self.stats.lowestCasualties,
+                                  self.stats.leastMoves,
                                   timestr))
         lblStats.grid(column=1, row=0, sticky="ew", ipadx=35, ipady=10)
 
@@ -649,7 +653,7 @@ class Application:
 
         else:
             self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
-            if (abs(self.clickedUnit.position[0]-x)+abs(self.clickedUnit.position[1]-y))>1 and self.clickedUnit.hasMovedFar != True:
+            if (abs(self.clickedUnit.position[0] - x) + abs(self.clickedUnit.position[1] - y)) > 1 and self.clickedUnit.hasMovedFar != True:
                 #thisArmy.nrOfMoved += 1
                 #thisArmy.nrOfUnmoved -= 1
                 #thisArmy.nrOfUnknownMoved += 1
@@ -698,6 +702,7 @@ class Application:
     def endTurn(self):
         """Switch turn to other player and check for end of game conditions"""
         self.turn = self.otherPlayer(self.turn)
+        self.turnNr += 1
 
         if self.brains[self.turn] and not self.won: # computer player?
             (oldlocation, move) = self.brains[self.turn].findMove()
@@ -779,19 +784,19 @@ class Application:
                 for i in range(y0 + 1, y1):
                     if self.isPool(x, i) or self.getUnit(x, i):
                         return False
-                    
+
             else:
-                x0 = min(x, ux)
-                y0 = min(y, uy)
-                distance = abs(x-ux)
+                xdir = dx / (x - ux)
+                ydir = dy / (y - uy)
+                distance = abs(x - ux)
                 for i in range(1, distance):
-                    if self.isPool(x0+i, y0+i) or self.getUnit(x0+i, y0+i):
+                    if self.isPool(ux + i * xdir, uy + i * ydir) or self.getUnit(ux + i * xdir, uy + i * ydir):
                         return False
         else:
             s = dx + dy
             if self.diagonal:
-                if s == 0 or max(dx,dy) > 1:
-                    return False 
+                if s == 0 or max(dx, dy) > 1:
+                    return False
             elif s != 1:
                 return False
 
@@ -805,7 +810,7 @@ class Application:
         else:
             attackerArmy = self.blueArmy
             defenderArmy = self.redArmy
-        
+
         # Only the first time a piece becomes known, the possible ranks are updated:
         if not attacker.isKnown:
             if attacker.hasMoved:
@@ -861,9 +866,9 @@ class Application:
             defenderArmy.nrOfKnownUnmovable -= 1
             attacker.justAttacked = True
             text += "The mine was disabled."
-            if (abs(attacker.position[0] - self.blueArmy.army[0].position[0])+abs(attacker.position[1] - self.blueArmy.army[0].position[1]) == 1):
+            if (abs(attacker.position[0] - self.blueArmy.army[0].position[0]) + abs(attacker.position[1] - self.blueArmy.army[0].position[1]) == 1):
                 self.blueArmy.flagIsBombProtected = False
-            if (abs(attacker.position[0] - self.redArmy.army[0].position[0])+abs(attacker.position[1] - self.redArmy.army[0].position[1]) == 1):
+            if (abs(attacker.position[0] - self.redArmy.army[0].position[0]) + abs(attacker.position[1] - self.redArmy.army[0].position[1]) == 1):
                 self.redArmy.flagIsBombProtected = False
 
 
@@ -1011,7 +1016,7 @@ class Application:
                 messageTxt = "Unfortunately, the enemy has captured your flag. You lose."
 
         casualties = len(self.redArmy.army) - self.redArmy.nrAlive()
-        self.stats.addGame(color == "Red", casualties)
+        self.stats.addGame(color == "Red", casualties, self.turnNr)
         message = Label(top, text=messageTxt)
         message.grid(row=0, column=0, sticky=NE, ipadx=15, ipady=50)
 
@@ -1058,11 +1063,12 @@ class Stats:
         self.currentStreak = 0
         self.longestStreak = 0
         self.lowestCasualties = 999
+        self.leastMoves = 999
 
         self.totalRunTime = datetime.timedelta(0)
         self.lastChecked = lastChecked
 
-    def addGame(self, won, casualties):
+    def addGame(self, won, casualties, moves):
         """Update the statistics dependent on the number of games played, won or lost"""
         self.gamesPlayed += 1
         if won:
@@ -1070,6 +1076,7 @@ class Stats:
             self.currentStreak += 1
             self.longestStreak = max(self.longestStreak, self.currentStreak)
             self.lowestCasualties = min(self.lowestCasualties, casualties)
+            self.leastMoves = min(self.leastMoves, moves)
         else:
             self.gamesLost += 1
             self.currentStreak = 0
@@ -1088,6 +1095,9 @@ class Stats:
 class Launcher():
     """The launcher is the first window shown after starting the game, providing
         some fancy graphics and music, as well as some options to start a game"""
+
+    menus = 0
+
     def __init__(self, root):
         self.root = root
         self.top = Toplevel(root, bd=0)
@@ -1098,9 +1108,7 @@ class Launcher():
         self.top.bind("<Escape>", self.exit)
         setIcon(self.top, "flag")
         self.top.protocol("WM_DELETE_WINDOW", self.exit)
-        
-        menupadx = 5
-        menuwidth = 10
+
         buttonpadx = 12
 
         Label(self.top).grid()
@@ -1124,59 +1132,24 @@ class Launcher():
         self.exitbutton = Button(self.top, text="Exit", width=10, padx=20, command=self.exit)
         self.exitbutton.grid(row=2, column=5, padx=buttonpadx, pady=5, sticky=E)
 
-        lblBrain = Label(self.top, text="Opponent:", anchor=E, width=10)
         self.blueBrainVar = StringVar(self.top)
-        if py26:
-            mnuBrain = OptionMenu(self.top, self.blueBrainVar, *BRAINLIST)
-            mnuBrain.config(width=menuwidth)
-        else:
-            mnuBrain = Combobox(self.top, textvariable=self.blueBrainVar, state="readonly")
-            mnuBrain['values'] = BRAINLIST
-        self.blueBrainVar.set("SmartBrain")
-        lblBrain.grid(column=1, row=1, ipadx=6, ipady=2)
-        mnuBrain.grid(column=2, row=1, padx=6)
+        self.addMenu("Opponent", self.blueBrainVar, BRAINLIST, DEFAULTBRAIN)
 
-        lblDiff = Label(self.top, text="Difficulty:", anchor=E, width=10)
         self.difficultyVar = StringVar(self.top)
-        if py26:
-            mnuDiff = OptionMenu(self.top, self.difficultyVar, "Normal")
-            mnuDiff.config(width=menuwidth)
-        else:
-            mnuDiff = Combobox(self.top, textvariable=self.difficultyVar, state="readonly")
-            mnuDiff['values'] = ("Normal")
-        self.difficultyVar.set("Normal")
-        lblDiff.grid(column=1, row=2, ipadx=6, ipady=2)
-        mnuDiff.grid(column=2, row=2, padx=6)
+        self.addMenu("Difficulty", self.difficultyVar, ["Normal"], "Normal")
 
-        lblSize = Label(self.top, text="Board size", anchor=E, width=10)
         self.sizeVar = StringVar(self.top)
-        if py26:
-            mnuSize = OptionMenu(self.top, self.sizeVar, "Small", "Normal", "Large", "Extra Large")
-            mnuSize.config(width=menuwidth)
-        else:
-            mnuSize = Combobox(self.top, textvariable=self.sizeVar, state="readonly")
-            mnuSize['values'] = ("Small", "Normal", "Large", "Extra Large")
-        self.sizeVar.set("Normal")
-        lblSize.grid(column=3, row=1, ipadx=6, ipady=2)
-        mnuSize.grid(column=4, row=1, padx=6)
-        
-        lblDiagonal = Label(self.top, text="Diagonal moves", anchor=E, width=10)
+        self.addMenu("Board size", self.sizeVar, ["Small", "Normal", "Large", "Extra Large"], "Normal")
+
         self.diagonalVar = StringVar(self.top)
-        if py26:
-            mnuDiagonal = OptionMenu(self.top, self.diagonalVar, "Yes", "No")
-            mnuDiagonal.config(width=menuwidth)
-        else:
-            mnuDiagonal= Combobox(self.top, textvariable=self.diagonalVar, state="readonly")
-            mnuDiagonal['values'] = ("Yes", "No")
-        self.diagonalVar.set("No")
-        lblDiagonal.grid(column=3, row=2, ipadx=6, ipady=2)
-        mnuDiagonal.grid(column=4, row=2, padx=6)        
+        self.addMenu("Diagonal moves", self.diagonalVar, ["Yes", "No"], "No")
 
         self.top.rowconfigure(0, weight=1)
         self.top.columnconfigure(5, weight=1)
 
     def startGame(self):
         """Start the main interface with the options chosen in the launcher, and close the launcher window"""
+        self.clip.stop()
         self.top.destroy()
         Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(),
                     self.sizeVar.get(), self.diagonalVar.get())
@@ -1185,8 +1158,10 @@ class Launcher():
 
     def loadGame(self):
         """Load a game and close the launcher"""
+        self.clip.stop()
         self.top.destroy()
-        app = Application(self.root, self.blueBrainVar.get())
+        app = Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(),
+                    self.sizeVar.get(), self.diagonalVar.get())
         app.loadGame()
         self.root.update()
         self.root.deiconify()
@@ -1211,6 +1186,24 @@ class Launcher():
             self.clip = mp3play.load(os.path.join(MUSIC_DIR, track))
             self.clip.play()
             self.top.after(self.clip.milliseconds(), self.playMusic)
+
+    def addMenu(self, labeltext, var, options, default):
+        """Add an OptionMenu (in Python 2.6's Tkinter) or a ttk Combobox (in Python 2.7)
+        to the launcher interface"""
+        var.set(default)
+        lbl = Label(self.top, text=labeltext, anchor=E, width=10)
+
+        if py26:
+            menu = OptionMenu(self.top, var, *options)
+        else:
+            menu = Combobox(self.top, textvariable=var, state="readonly")
+            menu['values'] = options
+
+        labelcolumn = 1 + 2 * (Launcher.menus / 2)
+        lbl.grid(column=labelcolumn, row=1 + Launcher.menus % 2, ipadx=6, ipady=2)
+        menu.grid(column=labelcolumn + 1, row=1 + Launcher.menus % 2, padx=6)
+
+        Launcher.menus += 1
 
     def exit(self, event=None):
         """End the program!"""
