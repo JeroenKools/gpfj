@@ -807,6 +807,8 @@ class Application:
         return True
 
     def attack(self, attacker, defender):
+        """Give the outcome of an attack and remove defeated pieces from the board"""
+        
         ######## 
         if attacker.color == "Red":
             attackerArmy = self.redArmy
@@ -850,9 +852,6 @@ class Application:
 
         ##########
 
-
-        """Give the outcome of an attack and remove defeated pieces from the board"""
-
         text = "A %s %s attacked a %s %s. " % (attacker.color, attacker.name, defender.color, defender.name)
         attacker.isKnown = True
         defender.isKnown = True
@@ -865,7 +864,6 @@ class Application:
         elif attacker.canDefuseBomb and defender.name == "Bomb":
             attacker.position = defender.position
             defender.die()
-            #if defender.name in defenderArmy.livingPossibleUnmovableRanks: defenderArmy.livingPossibleUnmovableRanks.remove(defender.name)
             defenderArmy.nrOfLiving -= 1
             defenderArmy.nrOfKnownUnmovable -= 1
             attacker.justAttacked = True
@@ -878,7 +876,6 @@ class Application:
 
         elif attacker.canKillMarshal and defender.name == "Marshal":
             attacker.position = defender.position
-            #if defender.name in defenderArmy.livingPossibleMovableRanks: defenderArmy.livingPossibleMovableRanks.remove(defender.name)
             defenderArmy.nrOfLiving -= 1
             defenderArmy.nrOfMoved -= 1
             defender.die()
@@ -887,7 +884,6 @@ class Application:
 
         elif attacker.rank > defender.rank:
             attacker.position = defender.position
-            #if defender.name in defenderArmy.livingPossibleMovableRanks: defenderArmy.livingPossibleMovableRanks.remove(defender.name)
             defenderArmy.nrOfLiving -= 1
             defenderArmy.nrOfMoved -= 1
             defender.die()
@@ -895,10 +891,8 @@ class Application:
             text += "The %s was defeated." % defender.name
 
         elif attacker.rank == defender.rank:
-            #if defender.name in defenderArmy.livingPossibleMovableRanks: defenderArmy.livingPossibleMovableRanks.remove(defender.name)
             defenderArmy.nrOfLiving -= 1
             defenderArmy.nrOfMoved -= 1
-            #if attacker.name in attackerArmy.livingPossibleMovableRanks: attackerArmy.livingPossibleMovableRanks.remove(attacker.name)
             attackerArmy.nrOfLiving -= 1
             attackerArmy.nrOfMoved -= 1
             attacker.die()
@@ -906,7 +900,6 @@ class Application:
             text += "Both units died."
 
         else:
-            #if attacker.name in attackerArmy.livingPossibleMovableRanks: attackerArmy.livingPossibleMovableRanks.remove(attacker.name)
             attackerArmy.nrOfLiving -= 1
             attackerArmy.nrOfMoved -= 1
             attacker.die()
@@ -915,25 +908,28 @@ class Application:
         if not self.won:
             text = fill(dedent(text), 60)
 
-            top = Toplevel(width=300)
-            top.title("Battle result")
-            setIcon(top, "flag")
+            self.battleResultDialog = Toplevel(width=300)
+            self.battleResultDialog.title("Battle result")
+            self.battleResultDialog.grab_set()
+            self.battleResultDialog.bind("<Return>", self.closeBattleResultWindow)
+            self.battleResultDialog.focus()
+            setIcon(self.battleResultDialog, "flag")
 
             atkImg = ImageTk.PhotoImage(self.unitIcons.getImage(attacker.name, 120))
-            atkLbl = Label(top, image=atkImg)
+            atkLbl = Label(self.battleResultDialog, image=atkImg)
             atkLbl.image = atkImg
             atkLbl.grid(row=0, column=0, sticky=NW)
 
             defImg = ImageTk.PhotoImage(self.unitIcons.getImage(defender.name, 120))
-            defLbl = Label(top, image=defImg)
+            defLbl = Label(self.battleResultDialog, image=defImg)
             defLbl.image = defImg
 
-            message = Label(top, text=text)
+            message = Label(self.battleResultDialog, text=text)
             message.grid(row=0, column=1, sticky=NE, ipadx=15, ipady=50)
 
             defLbl.grid(row=0, column=2, sticky=NE)
 
-            ok = Button(top, text="OK", command=top.destroy)
+            ok = Button(self.battleResultDialog, text="OK", command=self.closeBattleResultWindow)
             ok.grid(row=1, column=1, ipadx=15, ipady=5, pady=5)
             if defender.name == "Bomb":
                 if attacker.canDefuseBomb:
@@ -948,14 +944,15 @@ class Application:
                 self.playSound(SOUND_LAUGH)
             else:
                 self.playSound(SOUND_COMBAT)
-            self.root.wait_window(top)
+            self.root.wait_window(self.battleResultDialog)
 
-            #tkMessageBox.showinfo("Battle result", text)
-
-        #self.drawMap()
         self.drawSidePanels()
         self.clickedUnit = None
         self.movingUnit = False
+        
+    def closeBattleResultWindow(self, event=None):
+        """Called by key event to close the battle result window"""
+        self.battleResultDialog.destroy()
 
     def getUnit(self, x, y):
         """Return unit at a certain position"""
