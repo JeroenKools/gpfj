@@ -6,7 +6,7 @@ Created on 28 jun. 2012
 """
 
 GAME_NAME = "Kindral"      # Kindral? Praetor? Napoleon? Austerlitz?
-VERSION = "0.52"           # Game version
+VERSION = "0.53"           # Game version
 DEBUG = False              # If True, show enemy units' ranks (cheat/debug)
 
 AUTHORS = "Jeroen Kools & Fedde Burgers"
@@ -32,6 +32,10 @@ SHADOW_RED_COLOR = "#600"
 BLUE_PLAYER_COLOR = "#00A"
 SELECTED_BLUE_PLAYER_COLOR = "#00E"
 SHADOW_BLUE_COLOR = "#006"
+
+ANIMATIONS = True
+MOVE_ANIM_STEPS = 10
+MOVE_ANIM_FRAMERATE = 15 # time between animation frames in milliseconds
 
 HELP_BG = "gray90"
 

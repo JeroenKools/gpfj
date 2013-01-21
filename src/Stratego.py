@@ -399,7 +399,6 @@ class Application:
             for f, title in tabs:
                 frame = Frame(self.helpWindow)
                 tab = f(frame)
-                print title
                 helpNB.add(tab, text=title)
 
         btnOK = Button(self.helpWindow, text="OK", command=self.closeHelp)
@@ -456,6 +455,7 @@ class Application:
     def helpMore(self, frame):
         """Show help about special options and rules, different from classic Stratego"""
         
+        #TODO: finish the text for this tab
         paragraphs = [(
         "Special Rules", """
         %s includes several optional variations on the classic board game Stratego,
@@ -560,7 +560,11 @@ class Application:
         """Draw an arrow indicating the opponent's move"""
         self.map.create_line(int((old[0] + 0.5) * TILE_PIX), int((old[1] + 0.5) * TILE_PIX),
                              int((new[0] + 0.5) * TILE_PIX), int((new[1] + 0.5) * TILE_PIX),
-                             width=3, fill=MOVE_ARROW_COLOR, arrow=LAST, arrowshape="8 10 6")
+                             width=3, fill=MOVE_ARROW_COLOR, arrow=LAST, arrowshape="8 10 6",
+                             tags="moveArrow")
+        
+    def clearMoveArrows(self):
+        self.map.delete("moveArrow")
 
     def drawSidePanels(self):
         """Draw the unplaced units in the sidebar widget."""
@@ -599,31 +603,31 @@ class Application:
         # draw hilight
         canvas.create_rectangle(x * TILE_PIX, y * TILE_PIX,
                                 (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
-                                fill=hilight, outline=None)
+                                fill=hilight, outline=None, tags="u"+str(id(unit)))
         # draw shadow
         canvas.create_rectangle(x * TILE_PIX + TILE_BORDER, y * TILE_PIX + TILE_BORDER,
                                 (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
-                                fill=shadow, outline=None, width=0)
+                                fill=shadow, outline=None, width=0, tags="u"+str(id(unit)))
         # draw center
         canvas.create_rectangle(x * TILE_PIX + TILE_BORDER, y * TILE_PIX + TILE_BORDER,
                                 (x + 1) * TILE_PIX - TILE_BORDER, (y + 1) * TILE_PIX - TILE_BORDER,
-                                fill=color, outline=None, width=0)
+                                fill=color, outline=None, width=0, tags="u"+str(id(unit)))
 
         if unit.color == "Red" or DEBUG or not unit.alive or self.won or unit.justAttacked:
             unit.justAttacked = False
             canvas.create_image(x * TILE_PIX, y * TILE_PIX,
-                                image=self.unitIcons.getIcon(unit.name), anchor=NW)
+                                image=self.unitIcons.getIcon(unit.name), anchor=NW, tags="u"+str(id(unit)))
             if unit.name != "Bomb" and unit.name != "Flag":
                 canvas.create_text(((x + .2) * TILE_PIX, (y + .8) * TILE_PIX),
-                                   text=unit.rank, fill=MOVE_ARROW_COLOR)
+                                   text=unit.rank, fill=MOVE_ARROW_COLOR, tags="u"+str(id(unit)))
 
         if not unit.alive:
-            canvas.create_line(x * TILE_PIX, y * TILE_PIX,
-                               (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
-                               width=3, fill=DEAD_COLOR, capstyle=ROUND)
+            canvas.create_line(x * TILE_PIX, y * TILE_PIX, 
+                               (x + 1) * TILE_PIX, (y + 1) * TILE_PIX, 
+                               tags="u"+str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
             canvas.create_line(x * TILE_PIX, (y + 1) * TILE_PIX,
                                (x + 1) * TILE_PIX, y * TILE_PIX,
-                               width=3, fill=DEAD_COLOR, capstyle=ROUND)
+                               tags="u"+str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
 
     def isPool(self, x, y):
         """Check whether there is a pool at tile (x,y)."""
@@ -719,9 +723,22 @@ class Application:
         else:
             thisArmy = self.blueArmy
 
+        # Moving more than one tile will "expose" the unit as a scout 
         (i, j) = self.clickedUnit.getPosition()
         if abs(i - x) > 1 or abs(j - y) > 1:
             self.clickedUnit.isKnown = True
+            
+        # Do move animation
+        stepSize = TILE_PIX/MOVE_ANIM_STEPS
+        dx = x-i
+        dy = y-j
+        self.clearMoveArrows()
+        
+        if ANIMATIONS:
+            for _step in range(MOVE_ANIM_STEPS):
+                self.root.after(MOVE_ANIM_FRAMERATE, 
+                    self.map.move("u"+str(id(self.clickedUnit)), stepSize*dx, stepSize*dy))
+                self.root.update_idletasks()
 
         target = self.getUnit(x, y)
         if target:
@@ -745,9 +762,6 @@ class Application:
         else:
             self.setStatusBar("Moved %s to (%s, %s)" % (self.clickedUnit, x, y))
             if (abs(self.clickedUnit.position[0] - x) + abs(self.clickedUnit.position[1] - y)) > 1 and self.clickedUnit.hasMovedFar != True:
-                #thisArmy.nrOfMoved += 1
-                #thisArmy.nrOfUnmoved -= 1
-                #thisArmy.nrOfUnknownMoved += 1
                 if not self.clickedUnit.hasMoved:
                     thisArmy.nrOfKnownMovable += 1
                 elif not self.clickedUnit.isKnown:
@@ -761,8 +775,6 @@ class Application:
                         unit.possibleUnmovableRanks = []
                     elif "Scout" in unit.possibleMovableRanks:unit.possibleMovableRanks.remove("Scout")
             elif self.clickedUnit.hasMoved != True:
-                #thisArmy.nrOfMoved += 1
-                #thisArmy.nrOfUnmoved -= 1
                 thisArmy.nrOfUnknownMoved += 1
                 self.clickedUnit.hasMoved = True
                 for unit in thisArmy.army:
@@ -805,6 +817,19 @@ class Application:
 
             unit = self.getUnit(oldlocation[0], oldlocation[1])
             unit.hasMoved = True
+            
+            # Do move animation
+            stepSize = TILE_PIX/MOVE_ANIM_STEPS
+            dx = move[0]-oldlocation[0]
+            dy = move[1]-oldlocation[1]
+
+            if ANIMATIONS:
+                for _step in range(MOVE_ANIM_STEPS):
+                    self.root.after(MOVE_ANIM_FRAMERATE, 
+                        self.map.move("u"+str(id(unit)), stepSize*dx, stepSize*dy))
+                    self.root.update_idletasks() 
+                                
+            self.drawMoveArrow(oldlocation, move)
             enemy = self.getUnit(move[0], move[1])
             if enemy:
                 self.attack(unit, enemy)
@@ -825,10 +850,11 @@ class Application:
 
             self.setStatusBar("%s moves unit at (%s,%s) to (%s,%s)" % (self.turn,
                                                                        oldlocation[0], oldlocation[1],
-                                                                       move[0], move[1]))
+                                                                       move[0], move[1]))              
             self.drawMap()
+            if not enemy: 
+                self.drawMoveArrow(oldlocation, move)
             self.drawSidePanels()
-            self.drawMoveArrow(oldlocation, move)
 
         self.turn = self.otherPlayer(self.turn)
 
@@ -1038,6 +1064,7 @@ class Application:
                 self.playSound(SOUND_COMBAT)
             self.root.wait_window(self.battleResultDialog)
 
+        self.clearMoveArrows()
         self.drawSidePanels()
         self.clickedUnit = None
         self.movingUnit = False
