@@ -39,7 +39,7 @@ if sys.version_info[:2] == (2, 7):
     py26 = False
 
 if not py26:
-    from ttk import Combobox
+    from ttk import Combobox, Notebook
 
 if platform == "Windows":
     import winsound
@@ -377,16 +377,108 @@ class Application:
         self.statsWindow.destroy()
 
     def helpMe(self):
-        """Show a window with information about the game objective and the different pieces"""
-        #TODO: Give more info about game rules, depending on phase (placement or actual game) 
-        self.helpImage = Image.open("help.png")
-        self.helpImage = ImageTk.PhotoImage(self.helpImage)
+        """Show a window with information about the game rules and the different pieces"""
+
         self.helpWindow = Toplevel(width=400, height=640)
-        lblHelp = Label(self.helpWindow, image=self.helpImage)
-        lblHelp.grid(column=0, row=0, sticky="ew")
+        
+        # Python 2.6 doesn't have the fancy ttk notebook widget, so it
+        # will have to make do with the plain old help
+        if py26:
+            f = self.helpUnits(Frame(self.helpWindow))
+            f.grid()
+        
+        else:
+            helpNB = Notebook(self.helpWindow)
+            helpNB.enable_traversal()
+            helpNB.grid(column=0, row=0, sticky=N+S+E+W)
+            
+            tabs = [(self.helpBasicRules, "Basic Rules"),
+                    (self.helpUnits, "Units"),
+                    (self.helpMore, "Optional Rules")]
+            
+            for f, title in tabs:
+                frame = Frame(self.helpWindow)
+                tab = f(frame)
+                print title
+                helpNB.add(tab, text=title)
 
         btnOK = Button(self.helpWindow, text="OK", command=self.closeHelp)
         btnOK.grid(column=0, row=1, columnspan=2, ipadx=15, pady=8)
+        
+    def helpBasicRules(self, frame):
+        """Show a text about the basic game rules in the help dialog"""
+
+        paragraphs = [
+        ("Introduction","""
+        The goal of %s is to capture your enemy's flag while protecting your own. 
+        If you take the enemy flag or if the enemy has no movable pieces left, you win.  
+        To achieve this, you have a set of units with different strengths and abilities.
+        For more details about the units, see the corresponding help page.""" % (GAME_NAME)), 
+                 
+        ("Army Placement", """
+        The game starts with an empty board, and it is up to you to place your units in a strong formation.
+        Put your flag in a safe place and use bombs for extra protection, but don't block your own troops.
+        You can press 'p' to put your unplaced units on the board randomly. Once all pieces are placed,
+        the real game begins."""),
+
+        ("Movement", """
+        A player can move one unit each turn. Most units can move a single tile per turn.
+        The exceptions are scouts, who can move farther, and bombs and flags, which cannot move.
+        You can never moved to a tile occupied by a friendly piece or by water."""),  
+
+        ("Battles", """
+        When a player moves a unit to a tile occupied by a unit of the opposing army, there is a fight.
+        Both players get to see the rank of the enemy piece, and the weaker piece dies.
+        If the pieces are of equal rank, both die.""")]
+        
+        txt = Text(frame, height=40, background = HELP_BG)
+        txt.tag_config("title", font=("Times", 12, "bold"), underline=1)
+        txt.tag_config("main", font=("Arial", 11))
+        wrapper = TextWrapper(width=100)
+        
+        for p in paragraphs:
+            txt.insert(END, p[0]+"\n\n", "title")
+            wrappedText = wrapper.fill(dedent(p[1]))+"\n\n"
+            txt.insert(END, wrappedText, "main")
+        txt.grid(sticky=N+S+E+W)
+        txt.config(state=DISABLED)
+        return frame
+        
+    def helpUnits(self, frame):
+        """Show help about units"""
+        
+        self.helpImage = Image.open("help.png")
+        self.helpImage = ImageTk.PhotoImage(self.helpImage)
+        lbl = Label(frame, image=self.helpImage)
+        lbl.grid(column=0, row=0, sticky="ew")
+        return frame    
+            
+    def helpMore(self, frame):
+        """Show help about special options and rules, different from classic Stratego"""
+        
+        paragraphs = [(
+        "Special Rules", """
+        %s includes several optional variations on the classic board game Stratego,
+        and they are explained here.""" % (GAME_NAME)),
+                      
+        ("Diagonal movement", """
+        Bla bla"""),
+        
+        ("Board size", """
+        Bla bla""")]
+        
+        txt = Text(frame, background = HELP_BG)
+        txt.tag_config("title", font=("Times", 12, "bold"), underline=1)
+        txt.tag_config("main", font=("Times", 11))
+        wrapper = TextWrapper(width=100)
+        
+        for p in paragraphs:
+            txt.insert(END, p[0]+"\n\n", "title")
+            wrappedText = wrapper.fill(dedent(p[1]))+"\n\n"
+            txt.insert(END, wrappedText, "main")
+        txt.grid(sticky=N+S+E+W)
+        txt.config(state=DISABLED)
+        return frame
 
     def closeHelp(self):
         """Close the help window"""
