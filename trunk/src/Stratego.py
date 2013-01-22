@@ -68,6 +68,7 @@ class Application:
         self.blueBrainName = brain
         self.difficulty = difficulty
         self.diagonal = (diagonal == "Yes")
+        self.debug = False
 
         global BOARD_WIDTH, POOLS, TILE_PIX
         BOARD_WIDTH = SIZE_DICT[size][0]
@@ -90,6 +91,9 @@ class Application:
         optionMenu = Menu(menuBar, tearoff=0)
         optionMenu.add_command(label="Settings", command=self.settings)
         optionMenu.add_command(label="Statistics", command=self.showStats)
+        self.animationsOn = BooleanVar()
+        optionMenu.add_checkbutton(label="Animations", onvalue=True, offvalue=False, variable=self.animationsOn)
+        self.animationsOn.set(True)
         self.soundOn = BooleanVar()
         optionMenu.add_checkbutton(label="Sound effects", onvalue=True, offvalue=False, variable=self.soundOn)
         self.soundOn.set(True)
@@ -151,6 +155,7 @@ class Application:
         self.map.bind("<Button-1>", self.mapClick)
         self.root.bind("<Button-3>", self.rightClick)
         self.root.bind("p", self.quickplace)
+        self.root.bind("<Control-d>", self.toggleDebug)
         self.root.protocol("WM_DELETE_WINDOW", self.exit)
 
         self.firstMove = "Red"
@@ -287,7 +292,7 @@ class Application:
                             justify="center", width=20)
             mnuDebug['values'] = ("True", "False")
 
-        self.debugVar.set(str(DEBUG))
+        self.debugVar.set(str(self.debug))
         lblDebug.grid(column=0, row=2, sticky="ew", ipadx=10, ipady=10)
         mnuDebug.grid(column=1, row=2, sticky="ew", padx=10)
 
@@ -297,9 +302,8 @@ class Application:
     def updateSettings(self):
         """Change the internal variables when the user confirms his changes made in the settings window"""
 
-        global DEBUG
         newBlueBrainName = self.blueBrainVar.get()
-        DEBUG = (self.debugVar.get() == "True")
+        self.debug = (self.debugVar.get() == "True")
         self.drawMap()
 
         if newBlueBrainName != self.blueBrainName:
@@ -613,7 +617,7 @@ class Application:
                                 (x + 1) * TILE_PIX - TILE_BORDER, (y + 1) * TILE_PIX - TILE_BORDER,
                                 fill=color, outline=None, width=0, tags="u"+str(id(unit)))
 
-        if unit.color == "Red" or DEBUG or not unit.alive or self.won or unit.justAttacked:
+        if unit.color == "Red" or self.debug or not unit.alive or self.won or unit.justAttacked:
             unit.justAttacked = False
             canvas.create_image(x * TILE_PIX, y * TILE_PIX,
                                 image=self.unitIcons.getIcon(unit.name), anchor=NW, tags="u"+str(id(unit)))
@@ -699,7 +703,10 @@ class Application:
         if y < (BOARD_WIDTH - self.armyHeight):
             self.setStatusBar("Must place unit in the first %i rows" % self.armyHeight)
             return
-
+        
+        if x < 0 or x >= BOARD_WIDTH:
+            self.setStatusBar("You can't place a unit off the edge of the board!")
+            return
 
         self.clickedUnit.setPosition(x, y)
         self.setStatusBar("Placed %s" % self.clickedUnit)
@@ -734,7 +741,7 @@ class Application:
         dy = y-j
         self.clearMoveArrows()
         
-        if ANIMATIONS:
+        if self.animationsOn.get():
             for _step in range(MOVE_ANIM_STEPS):
                 self.root.after(MOVE_ANIM_FRAMERATE, 
                     self.map.move("u"+str(id(self.clickedUnit)), stepSize*dx, stepSize*dy))
@@ -823,7 +830,7 @@ class Application:
             dx = move[0]-oldlocation[0]
             dy = move[1]-oldlocation[1]
 
-            if ANIMATIONS:
+            if self.animationsOn.get():
                 for _step in range(MOVE_ANIM_STEPS):
                     self.root.after(MOVE_ANIM_FRAMERATE, 
                         self.map.move("u"+str(id(unit)), stepSize*dx, stepSize*dy))
@@ -874,7 +881,7 @@ class Application:
         dx = abs(ux - x)
         dy = abs(uy - y)
 
-        if x >= BOARD_WIDTH or y >= BOARD_WIDTH:
+        if x >= BOARD_WIDTH or y >= BOARD_WIDTH or x < 0 or y < 0:
             return False
 
         if not self.started:
@@ -925,7 +932,7 @@ class Application:
         return True
 
     def attack(self, attacker, defender):
-        """Give the outcome of an attack and remove defeated pieces from the board"""
+        """Show the outcome of an attack and remove defeated pieces from the board"""
         
         ######## 
         if attacker.color == "Red":
@@ -1072,10 +1079,46 @@ class Application:
     def closeBattleResultWindow(self, event=None):
         """Called by key event to close the battle result window"""
         self.battleResultDialog.destroy()
+        
+    def trumps(self, unitA, unitB):
+        """Check the (potential) outcome of a battle without changing the game state"""
+        pass
+        
 
     def getUnit(self, x, y):
         """Return unit at a certain position"""
         return self.redArmy.getUnit(x, y) or self.blueArmy.getUnit(x, y)
+    
+    def getAdjacent(self, x, y):
+        """ Return a list of directly adjacent tile coordinates, considering the edge of the board
+        and whether or not diagonal movement is enabled."""
+        
+        adjacent = []
+        
+        if x > 0:
+            adjacent += [(x-1, y)] # West
+            if self.diagonal:
+                if y > 0:
+                    adjacent += [(x-1, y-1)] # Northwest
+                elif y < BOARD_WIDTH - 1:
+                    adjacent += [(x-1, y+1)] # Southwest
+        if y > 0:
+            adjacent += [(x,y-1)] # North
+        if y < BOARD_WIDTH - 1:
+            adjacent += [(x,y+1)] # South
+        if x < BOARD_WIDTH - 1:
+            adjacent += [(x+1, y)] # East
+            if self.diagonal:
+                if x > 0:
+                    adjacent += [(x+1, y-1)] # Southwest
+                if x < BOARD_WIDTH - 1:
+                    adjacent += [(x+1, y+1)] # Southeast
+        
+        return adjacent
+    
+    def toggleDebug(self, event):
+        self.debug = not self.debug
+        self.drawMap()
 
     def panelClick(self, event):
         """Process mouse clicks on the side panel widget."""
