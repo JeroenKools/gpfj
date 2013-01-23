@@ -94,6 +94,6 @@ class KABOOM:
 
 if __name__ == "__main__":
     root = Tk.Tk()
-    root.title("KABOOM! POW! Explosions!")
+    root.title("KABOOM! Explosions!")
     b = KABOOM(root)
     root.mainloop()

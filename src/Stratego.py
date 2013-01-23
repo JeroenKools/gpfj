@@ -70,12 +70,11 @@ class Application:
         self.diagonal = (diagonal == "Yes")
         self.debug = False
 
-        global BOARD_WIDTH, POOLS, TILE_PIX
-        BOARD_WIDTH = SIZE_DICT[size][0]
-        POOLS = SIZE_DICT[size][1]
-        TILE_PIX = SIZE_DICT[size][2]
+        self.boardWidth = SIZE_DICT[size][0]
+        self.pools = SIZE_DICT[size][1]
+        self.tilePix = SIZE_DICT[size][2]
 
-        self.unitIcons = Icons(TILE_PIX)
+        self.unitIcons = Icons(self.tilePix)
 
         # Create menu bar
         menuBar = Menu(root)
@@ -125,11 +124,11 @@ class Application:
         self.sidePanel = Frame(root, relief=SUNKEN, bd=2)
 
         Label(self.sidePanel, width=20, text="Blue").pack(side=TOP, pady=3)
-        self.blueUnitPanel = Canvas(self.sidePanel, height=4 * TILE_PIX, width=10 * TILE_PIX)
+        self.blueUnitPanel = Canvas(self.sidePanel, height=4 * self.tilePix, width=10 * self.tilePix)
         self.blueUnitPanel.pack(side=TOP)
 
         Label(self.sidePanel, width=20, text="Red").pack(side=BOTTOM, pady=4)
-        self.redUnitPanel = Canvas(self.sidePanel, height=4 * TILE_PIX, width=10 * TILE_PIX)
+        self.redUnitPanel = Canvas(self.sidePanel, height=4 * self.tilePix, width=10 * self.tilePix)
         self.redUnitPanel.pack(side=BOTTOM)
 
         self.sidePanel.pack(side=RIGHT, fill=Y)
@@ -138,12 +137,12 @@ class Application:
             child.bind("<Button-1>", self.panelClick)
 
         # Create map 
-        self.boardsize = BOARD_WIDTH * TILE_PIX
+        self.boardsize = self.boardWidth * self.tilePix
         grassImage = Image.open("%s/%s" % (TERRAIN_DIR, LAND_TEXTURE))
-        grassImage = grassImage.resize((BOARD_WIDTH * TILE_PIX, BOARD_WIDTH * TILE_PIX), Image.BICUBIC)
+        grassImage = grassImage.resize((self.boardWidth * self.tilePix, self.boardWidth * self.tilePix), Image.BICUBIC)
         self.grassImage = ImageTk.PhotoImage(grassImage)
         waterImage = Image.open("%s/%s" % (TERRAIN_DIR, WATER_TEXTURE))
-        waterImage = waterImage.resize((TILE_PIX, TILE_PIX), Image.BICUBIC)
+        waterImage = waterImage.resize((self.tilePix, self.tilePix), Image.BICUBIC)
         self.waterImage = ImageTk.PhotoImage(waterImage)
         self.mapFrame = Frame(root, relief=SUNKEN, bd=2)
         self.mapFrame.pack(side=RIGHT, fill=BOTH, expand=1)
@@ -185,13 +184,13 @@ class Application:
         self.started = False
 
         # Initialize armies and brains
-        self.armyHeight = min(4, (BOARD_WIDTH - 2) / 2)
+        self.armyHeight = min(4, (self.boardWidth - 2) / 2)
         self.braintypes = {"Blue": self.blueBrain,
                            "Red": self.redBrain}
-        self.blueArmy = Army("classical", "Blue", BOARD_WIDTH * self.armyHeight)
-        self.redArmy = Army("classical", "Red", BOARD_WIDTH * self.armyHeight)
-        self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy, BOARD_WIDTH) if self.braintypes["Blue"] else 0,
-                           "Red": self.braintypes["Red"].Brain(self, self.redArmy, BOARD_WIDTH) if self.braintypes["Red"] else 0}
+        self.blueArmy = Army("classical", "Blue", self.boardWidth * self.armyHeight)
+        self.redArmy = Army("classical", "Red", self.boardWidth * self.armyHeight)
+        self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy, self.boardWidth) if self.braintypes["Blue"] else 0,
+                           "Red": self.braintypes["Red"].Brain(self, self.redArmy, self.boardWidth) if self.braintypes["Red"] else 0}
 
         if self.brains["Blue"]:
             self.brains["Blue"].placeArmy(self.armyHeight)
@@ -215,7 +214,7 @@ class Application:
         if loadFilename:
             with open(loadFilename, 'rU') as f:
                 save = pickle.load(f)
-                BOARD_WIDTH = save['BOARD_WIDTH']
+                self.boardWidth = save['self.boardWidth']
                 self.blueArmy = save['self.blueArmy']
                 self.redArmy = save['self.redArmy']
                 self.blueBrainName = save['self.blueBrainName']
@@ -225,8 +224,8 @@ class Application:
                 self.won = save['self.won']
                 self.started = save['self.started']
 
-                self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy, BOARD_WIDTH) if self.braintypes["Blue"] else 0,
-                               "Red": self.braintypes["Red"].Brain(self, self.redArmy, BOARD_WIDTH) if self.braintypes["Red"] else 0}
+                self.brains = {"Blue": self.braintypes["Blue"].Brain(self, self.blueArmy, self.boardWidth) if self.braintypes["Blue"] else 0,
+                               "Red": self.braintypes["Red"].Brain(self, self.redArmy, self.boardWidth) if self.braintypes["Red"] else 0}
                 self.drawMap()
                 self.drawSidePanels()
                 self.setStatusBar("Game loaded!")
@@ -239,7 +238,7 @@ class Application:
                                                       initialdir=os.getcwd())
         if saveFilename:
             with open(saveFilename, 'w') as f:
-                pickle.dump({'BOARD_WIDTH': BOARD_WIDTH,
+                pickle.dump({'self.boardWidth': self.boardWidth,
                              'self.blueArmy': self.blueArmy,
                              'self.redArmy': self.redArmy,
                              'self.blueBrainName': self.blueBrainName,
@@ -548,14 +547,14 @@ class Application:
         self.map.create_image(0, 0, image=self.grassImage, anchor=NW)
 
         # draw water
-        for x in range(BOARD_WIDTH):
-            for y in range(BOARD_WIDTH):
+        for x in range(self.boardWidth):
+            for y in range(self.boardWidth):
                 if self.isPool(x, y):
-                    self.map.create_image(x * TILE_PIX, y * TILE_PIX, image=self.waterImage, anchor=NW)
+                    self.map.create_image(x * self.tilePix, y * self.tilePix, image=self.waterImage, anchor=NW)
 
         # draw lines
-        for i in range(BOARD_WIDTH - 1):
-            x = TILE_PIX * (i + 1)
+        for i in range(self.boardWidth - 1):
+            x = self.tilePix * (i + 1)
             self.map.create_line(x, 0, x, self.boardsize, fill="black")
             self.map.create_line(0, x, self.boardsize, x, fill="black")
 
@@ -571,12 +570,12 @@ class Application:
 
     def drawTile(self, x, y, tileColor):
         """Fill a tile with its background color - Currently unused"""
-        self.map.create_rectangle(x * TILE_PIX, y * TILE_PIX, (x + 1) * TILE_PIX, (y + 1) * TILE_PIX, fill=tileColor)
+        self.map.create_rectangle(x * self.tilePix, y * self.tilePix, (x + 1) * self.tilePix, (y + 1) * self.tilePix, fill=tileColor)
 
     def drawMoveArrow(self, old, new):
         """Draw an arrow indicating the opponent's move"""
-        self.map.create_line(int((old[0] + 0.5) * TILE_PIX), int((old[1] + 0.5) * TILE_PIX),
-                             int((new[0] + 0.5) * TILE_PIX), int((new[1] + 0.5) * TILE_PIX),
+        self.map.create_line(int((old[0] + 0.5) * self.tilePix), int((old[1] + 0.5) * self.tilePix),
+                             int((new[0] + 0.5) * self.tilePix), int((new[1] + 0.5) * self.tilePix),
                              width=3, fill=MOVE_ARROW_COLOR, arrow=LAST, arrowshape="8 10 6",
                              tags="moveArrow")
 
@@ -588,8 +587,8 @@ class Application:
         self.blueUnitPanel.delete(ALL)
         self.redUnitPanel.delete(ALL)
 
-        self.blueUnitPanel.create_rectangle(0, 0, 10 * TILE_PIX, 4 * TILE_PIX, fill=UNIT_PANEL_COLOR)
-        self.redUnitPanel.create_rectangle(0, 0, 10 * TILE_PIX, 4 * TILE_PIX, fill=UNIT_PANEL_COLOR)
+        self.blueUnitPanel.create_rectangle(0, 0, 10 * self.tilePix, 4 * self.tilePix, fill=UNIT_PANEL_COLOR)
+        self.redUnitPanel.create_rectangle(0, 0, 10 * self.tilePix, 4 * self.tilePix, fill=UNIT_PANEL_COLOR)
 
         unplacedRed = 0
         for unit in sorted(self.redArmy.army, key=lambda x: x.sortOrder):
@@ -618,42 +617,42 @@ class Application:
         shadow = SHADOW_RED_COLOR if unit.color == "Red" else SHADOW_BLUE_COLOR
 
         # draw hilight
-        canvas.create_rectangle(x * TILE_PIX, y * TILE_PIX,
-                                (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
+        canvas.create_rectangle(x * self.tilePix, y * self.tilePix,
+                                (x + 1) * self.tilePix, (y + 1) * self.tilePix,
                                 fill=hilight, outline=None, tags="u" + str(id(unit)))
         # draw shadow
-        canvas.create_rectangle(x * TILE_PIX + TILE_BORDER, y * TILE_PIX + TILE_BORDER,
-                                (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
+        canvas.create_rectangle(x * self.tilePix + TILE_BORDER, y * self.tilePix + TILE_BORDER,
+                                (x + 1) * self.tilePix, (y + 1) * self.tilePix,
                                 fill=shadow, outline=None, width=0, tags="u" + str(id(unit)))
         # draw center
-        canvas.create_rectangle(x * TILE_PIX + TILE_BORDER, y * TILE_PIX + TILE_BORDER,
-                                (x + 1) * TILE_PIX - TILE_BORDER, (y + 1) * TILE_PIX - TILE_BORDER,
+        canvas.create_rectangle(x * self.tilePix + TILE_BORDER, y * self.tilePix + TILE_BORDER,
+                                (x + 1) * self.tilePix - TILE_BORDER, (y + 1) * self.tilePix - TILE_BORDER,
                                 fill=color, outline=None, width=0, tags="u" + str(id(unit)))
 
         if unit.color == "Red" or self.debug or not unit.alive or self.won or unit.justAttacked:
             unit.justAttacked = False
-            canvas.create_image(x * TILE_PIX, y * TILE_PIX,
+            canvas.create_image(x * self.tilePix, y * self.tilePix,
                                 image=self.unitIcons.getIcon(unit.name), anchor=NW, tags="u" + str(id(unit)))
             if unit.name != "Bomb" and unit.name != "Flag":
-                canvas.create_text(((x + .2) * TILE_PIX, (y + .8) * TILE_PIX),
+                canvas.create_text(((x + .2) * self.tilePix, (y + .8) * self.tilePix),
                                    text=unit.rank, fill=MOVE_ARROW_COLOR, tags="u" + str(id(unit)))
 
         if not unit.alive:
-            canvas.create_line(x * TILE_PIX, y * TILE_PIX,
-                               (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
-                               tags="u" + str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
-            canvas.create_line(x * TILE_PIX, (y + 1) * TILE_PIX,
-                               (x + 1) * TILE_PIX, y * TILE_PIX,
+            canvas.create_line(x * self.tilePix, y * self.tilePix, 
+                               (x + 1) * self.tilePix, (y + 1) * self.tilePix, 
+                               tags="u"+str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
+            canvas.create_line(x * self.tilePix, (y + 1) * self.tilePix,
+                               (x + 1) * self.tilePix, y * self.tilePix,
                                tags="u" + str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
 
     def isPool(self, x, y):
         """Check whether there is a pool at tile (x,y)."""
 
         # uneven board size + middle row or even board size + middle 2 rows
-        if  (BOARD_WIDTH % 2 == 1 and y == BOARD_WIDTH / 2) or \
-            ((BOARD_WIDTH % 2 == 0) and (y == BOARD_WIDTH / 2 or y == (BOARD_WIDTH / 2) - 1)):
+        if  (self.boardWidth % 2 == 1 and y == self.boardWidth / 2) or \
+            ((self.boardWidth % 2 == 0) and (y == self.boardWidth / 2 or y == (self.boardWidth / 2) - 1)):
 
-            if sin(2 * pi * (x + .5) / BOARD_WIDTH * (POOLS + 0.5)) < 0:
+            if sin(2 * pi * (x + .5) / self.boardWidth * (self.pools + 0.5)) < 0:
                 return True
             else:
                 return False
@@ -669,8 +668,8 @@ class Application:
     def mapClick(self, event):
         """Process clicks on the map widget."""
 
-        x = event.x / TILE_PIX
-        y = event.y / TILE_PIX
+        x = event.x / self.tilePix
+        y = event.y / self.tilePix
 
         if self.isPool(x, y):
             terrain = 'water'
@@ -713,11 +712,11 @@ class Application:
             self.setStatusBar("Can't place %s there, spot already taken!" % self.clickedUnit.name)
             return
 
-        if y < (BOARD_WIDTH - self.armyHeight):
+        if y < (self.boardWidth - self.armyHeight):
             self.setStatusBar("Must place unit in the first %i rows" % self.armyHeight)
             return
 
-        if x < 0 or x >= BOARD_WIDTH:
+        if x < 0 or x >= self.boardWidth:
             self.setStatusBar("You can't place a unit off the edge of the board!")
             return
 
@@ -749,9 +748,9 @@ class Application:
             self.clickedUnit.isKnown = True
 
         # Do move animation
-        stepSize = TILE_PIX / MOVE_ANIM_STEPS
-        dx = x - i
-        dy = y - j
+        stepSize = self.tilePix/MOVE_ANIM_STEPS
+        dx = x-i
+        dy = y-j
         self.clearMoveArrows()
 
         if self.animationsOn.get():
@@ -839,9 +838,9 @@ class Application:
             unit.hasMoved = True
 
             # Do move animation
-            stepSize = TILE_PIX / MOVE_ANIM_STEPS
-            dx = move[0] - oldlocation[0]
-            dy = move[1] - oldlocation[1]
+            stepSize = self.tilePix/MOVE_ANIM_STEPS
+            dx = move[0]-oldlocation[0]
+            dy = move[1]-oldlocation[1]
 
             if self.animationsOn.get():
                 for _step in range(MOVE_ANIM_STEPS):
@@ -857,7 +856,7 @@ class Application:
                 unit.setPosition(move[0], move[1])
 
             # check if player can move
-            tempBrain = randomBrain.Brain(self, self.redArmy, BOARD_WIDTH)
+            tempBrain = randomBrain.Brain(self, self.redArmy, self.boardWidth)
             playerMove = tempBrain.findMove()
             if playerMove[0] == None:
                 self.victory(self.turn, True)
@@ -894,11 +893,11 @@ class Application:
         dx = abs(ux - x)
         dy = abs(uy - y)
 
-        if x >= BOARD_WIDTH or y >= BOARD_WIDTH or x < 0 or y < 0:
+        if x >= self.boardWidth or y >= self.boardWidth or x < 0 or y < 0:
             return False
 
         if not self.started:
-            if y < (BOARD_WIDTH - 4):
+            if y < (self.boardWidth - 4):
                 return False
             return True
 
@@ -1113,18 +1112,18 @@ class Application:
             if self.diagonal:
                 if y > 0:
                     adjacent += [(x - 1, y - 1)] # Northwest
-                elif y < BOARD_WIDTH - 1:
+                elif y < self.boardWidth - 1:
                     adjacent += [(x - 1, y + 1)] # Southwest
         if y > 0:
             adjacent += [(x, y - 1)] # North
-        if y < BOARD_WIDTH - 1:
+        if y < self.boardWidth - 1:
             adjacent += [(x, y + 1)] # South
-        if x < BOARD_WIDTH - 1:
+        if x < self.boardWidth - 1:
             adjacent += [(x + 1, y)] # East
             if self.diagonal:
                 if x > 0:
                     adjacent += [(x + 1, y - 1)] # Southwest
-                if x < BOARD_WIDTH - 1:
+                if x < self.boardWidth - 1:
                     adjacent += [(x + 1, y + 1)] # Southeast
 
         return adjacent
@@ -1135,8 +1134,8 @@ class Application:
 
     def panelClick(self, event):
         """Process mouse clicks on the side panel widget."""
-        x = event.x / TILE_PIX
-        y = event.y / TILE_PIX
+        x = event.x / self.tilePix
+        y = event.y / self.tilePix
 
         if event.widget == self.redUnitPanel:
             panel = "red"
@@ -1215,7 +1214,7 @@ class Application:
     def quickplace(self, event):
         """Let the computer place human player's pieces randomly"""
         if not self.started:
-            tempBrain = randomBrain.Brain(self, self.redArmy, BOARD_WIDTH)
+            tempBrain = randomBrain.Brain(self, self.redArmy, self.boardWidth)
             tempBrain.placeArmy(self.armyHeight)
 
             self.drawMap()
