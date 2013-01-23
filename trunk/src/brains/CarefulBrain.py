@@ -7,7 +7,7 @@ Careful brain
 '''
 
 import randomBrain
-from random import shuffle, choice
+from random import shuffle, choice, gauss
 import constants
 
 BOARD_WIDTH = constants.BOARD_WIDTH
@@ -34,6 +34,8 @@ class Brain(randomBrain.Brain):
         flag[0].setPosition(self.flagpos[0], self.flagpos[1])
 
         self.placeBombs(bombs)
+        self.placeSpy()
+        self.placeScouts()
 
         # place other pieces randomly!
         r = randomBrain.Brain(self.game, self.army)
@@ -55,15 +57,15 @@ class Brain(randomBrain.Brain):
         frontrowWeight = 3
         inFrontOfFlagWeight = 10
 
-        frontrow = self.armyHeight - 1 if self.army.color == "Blue" else BOARD_WIDTH - self.armyHeight
-        backrow = 0 if self.army.color == "Blue" else BOARD_WIDTH - 1
-        forward = 1 if self.army.color == "Blue" else -1
+        self.frontrow = self.armyHeight - 1 if self.army.color == "Blue" else BOARD_WIDTH - self.armyHeight
+        self.backrow = 0 if self.army.color == "Blue" else BOARD_WIDTH - 1
+        self.forward = 1 if self.army.color == "Blue" else -1
 
-        for row in range(min(frontrow, backrow), max(frontrow, backrow) + 1):
+        for row in range(min(self.frontrow, self.backrow), max(self.frontrow, self.backrow) + 1):
             for column in range(BOARD_WIDTH):
-                if row == backrow:
+                if row == self.backrow:
                     positions += backrowWeight * [(column, row)]
-                elif row == frontrow:
+                elif row == self.frontrow:
                     positions += frontrowWeight * [(column, row)]
                 else:
                     positions += [(column, row)]
@@ -73,8 +75,8 @@ class Brain(randomBrain.Brain):
             positions += nearFlagWeight * [(self.flagpos[0] - 1, self.flagpos[1])]
         if self.flagpos[0] < (BOARD_WIDTH - 1):
             positions += nearFlagWeight * [(self.flagpos[0] + 1, self.flagpos[1])]
-        if self.flagpos[1] != frontrow:
-            positions += inFrontOfFlagWeight * [(self.flagpos[0], self.flagpos[1] + forward)]
+        if self.flagpos[1] != self.frontrow:
+            positions += inFrontOfFlagWeight * [(self.flagpos[0], self.flagpos[1] + self.forward)]
 
         positions = [x for x in positions if x != self.flagpos]
 
@@ -83,12 +85,44 @@ class Brain(randomBrain.Brain):
             bomb.setPosition(bombpos[0], bombpos[1])
             positions = [pos for pos in positions if pos != bombpos]
 
+    def placeSpy(self):
+        """"Place the Spy on an unoccupied spot. Lean heavily towards the middle of the second or third row."""
+
+        spy = self.getUnits("Spy")[0]
+        ylist = [self.backrow + self.forward] * 2 + [self.backrow + 2 * self.forward]
+        placed = False
+
+        while not placed:
+            x = int(round(gauss(BOARD_WIDTH / 2.0, 1.5)))
+            x = max(0, min(BOARD_WIDTH, x))
+            y = choice(ylist)
+            if self.game.getUnit(x, y):
+                continue # already occupied
+            else:
+                placed = True
+                spy.setPosition(x, y)
+
+    def placeScouts(self, number=2):
+        """Try to place some scouts at the front line"""
+        scouts = self.getUnits("Scout")
+
+        columns = range(BOARD_WIDTH)
+        placed = 0
+        attempts = 0
+
+        while placed < number and attempts < 1000:
+            attempts += 1
+            x = choice(columns)
+            if not self.game.getUnit(x, self.frontrow) and not self.game.isPoolColumn(x):
+                scouts[placed].setPosition(x, self.frontrow)
+                placed += 1
+
     def getUnits(self, name):
         return [unit for unit in self.army.army if unit.name == name]
 
     def findMove(self):
         """Careful..."""
-        
+
         move = None
         moves = []
         order = range(len(self.army.army))
@@ -96,15 +130,15 @@ class Brain(randomBrain.Brain):
         enemyArmy = self.game.otherArmy(self.army.color)
         highestUnknown = enemyArmy.highestUnknown()
         self.threats = self.findThreats()
-        
+
         # Try these high priority moves first
         methods = [self.keepMarshalSafe, self.hitWeakerUnits, self.scout]
         for method in methods:
             move = method()
-            if move: 
+            if move:
                 #print 'priority move:', method, move
                 return move
-            
+
         # If there are no high priority moves,
         # Find a decent move going through the units in random order 
         for i in order:
@@ -143,8 +177,8 @@ class Brain(randomBrain.Brain):
                                 return ((col, row), direction)
                         elif not target.isKnown and unit.walkFar:       # our unit is a scout
                             dirlist += [direction] * 5
-                        elif not target.isKnown and unit.rank == 5:     # lieutenants are cannon fodder
-                            dirlist += [direction]
+                        #elif not target.isKnown and unit.rank == 5:     # lieutenants are cannon fodder
+                        #    dirlist += [direction]
                         elif target.isKnown and target.rank == 99 and unit.canDefuseBomb: # defuse known bomb
                             #print 'I hate bombs!'
                             return ((col, row), direction)
@@ -154,7 +188,7 @@ class Brain(randomBrain.Brain):
                             safe = True
                             # Make sure Marshal isn't walking into a trap
                             for newNeighborTile in newNeighborTiles:
-                                newNeighbor = self.game.getUnit(newNeighborTile[0],newNeighborTile[1])
+                                newNeighbor = self.game.getUnit(newNeighborTile[0], newNeighborTile[1])
                                 if newNeighbor and newNeighbor.color != unit.color:
                                     if not(newNeighbor.isKnown):
                                         safe = False
@@ -162,7 +196,7 @@ class Brain(randomBrain.Brain):
                             if target.isKnown and target.rank == 10:
                                 safe = False
                                 #print "I'm not committing suicide!"
-                            
+
                             if safe:
                                 #print "I'm invincible!"
                                 return ((col, row), direction)
@@ -197,71 +231,71 @@ class Brain(randomBrain.Brain):
         #print 'this is my last resort!'
         tempBrain = randomBrain.Brain(self.game, self.army)
         return tempBrain.findMove()
-    
+
     def keepMarshalSafe(self):
         "Deal with potential attacks being attempted on our marshal"
         marshal = self.getUnits("Marshal")[0]
         if not(marshal.isKnown) or not(marshal.alive):
             return
-        
+
         if marshal in [x[0] for x in self.threats]:
             #print 'marshal in danger!!'
-            
+
             # Find safer tiles - flee!
-            mx,my = marshal.getPosition()
-            for x, y in self.game.getAdjacent(mx,my):
+            mx, my = marshal.getPosition()
+            for x, y in self.game.getAdjacent(mx, my):
                 #print 'is %i,%i safer?' % (x,y)
-                if self.game.getUnit(x,y): continue
+                if self.game.getUnit(x, y): continue
                 safe = True
-                newNeighborTiles = self.game.getAdjacent(x,y)
+                newNeighborTiles = self.game.getAdjacent(x, y)
                 for newNeighborTile in newNeighborTiles:
-                    newNeighbor = self.game.getUnit(newNeighborTile[0],newNeighborTile[1])
+                    newNeighbor = self.game.getUnit(newNeighborTile[0], newNeighborTile[1])
                     if newNeighbor and newNeighbor.color != marshal.color and not(newNeighbor.isKnown):
                         safe = False
-                if safe and self.game.legalMove(marshal,x,y): 
-                    return ((mx,my),(x,y)) 
-                
+                if safe and self.game.legalMove(marshal, x, y):
+                    return ((mx, my), (x, y))
+
             # Intercept threat to Marshal with another unit
             threat = [t[1] for t in self.threats if t[0] == marshal][0]
             threatx, threaty = threat.getPosition()
-            for x,y in self.game.getAdjacent(threatx, threaty):
-                unit = self.game.getUnit(x,y)
-                if unit and unit!= marshal and unit.color == marshal.color:
-                    return ((x,y),(threatx,threaty)) 
-    
+            for x, y in self.game.getAdjacent(threatx, threaty):
+                unit = self.game.getUnit(x, y)
+                if unit and unit != marshal and unit.color == marshal.color:
+                    return ((x, y), (threatx, threaty))
+
     def hitWeakerUnits(self):
         for unit in self.army.army:
             if unit.name == "Marshal" or not(unit.canMove) or not(unit.alive): continue
-            x,y = unit.getPosition()
-            for i,j in self.game.getAdjacent(x,y):
-                enemy = self.game.getUnit(i,j)
+            x, y = unit.getPosition()
+            for i, j in self.game.getAdjacent(x, y):
+                enemy = self.game.getUnit(i, j)
                 if enemy and enemy.color != unit.color and enemy.isKnown and enemy.rank < unit.rank:
-                    return((x,y), (i,j))
-    
+                    return((x, y), (i, j))
+
     def findThreats(self):
         """Return a list of (friendly, enemy) unit tuples, where enemy is a known enemy unit whose rank
         is higher than that of the adjacent friendly unit, or an unknown unit"""
-        
+
         threats = []
         for enemyUnit in self.game.otherArmy(self.army.color).army:
-            x,y = enemyUnit.getPosition()
-            for i,j in self.game.getAdjacent(x,y):
-                myUnit = self.army.getUnit(i,j)
+            x, y = enemyUnit.getPosition()
+            for i, j in self.game.getAdjacent(x, y):
+                myUnit = self.army.getUnit(i, j)
                 if myUnit:
                     if enemyUnit.isKnown:
                         if myUnit.rank < enemyUnit.rank:
                             threats += [(myUnit, enemyUnit)]
                     else:
                         threats += [(myUnit, enemyUnit)]
-                    
+
         return threats
-    
+
     def scout(self):
         scouts = self.getUnits("Scout")
-        
+
         for scout in scouts:
             (col, row) = scout.getPosition()
-            for dist in range(BOARD_WIDTH,1,-1):
+            for dist in range(BOARD_WIDTH, 1, -1):
                 north = (col, row - dist)
                 south = (col, row + dist)
                 west = (col - dist, row)
