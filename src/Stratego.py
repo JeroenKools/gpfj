@@ -156,6 +156,7 @@ class Application:
         self.root.bind("<Button-3>", self.rightClick)
         self.root.bind("p", self.quickplace)
         self.root.bind("<Control-d>", self.toggleDebug)
+        self.root.bind("<F1>", self.helpMe)
         self.root.protocol("WM_DELETE_WINDOW", self.exit)
 
         self.firstMove = "Red"
@@ -380,26 +381,26 @@ class Application:
         """Close the statistics window"""
         self.statsWindow.destroy()
 
-    def helpMe(self):
+    def helpMe(self, event=None):
         """Show a window with information about the game rules and the different pieces"""
 
         self.helpWindow = Toplevel(width=400, height=640)
-        
+
         # Python 2.6 doesn't have the fancy ttk notebook widget, so it
         # will have to make do with the plain old help
         if py26:
             f = self.helpUnits(Frame(self.helpWindow))
             f.grid()
-        
+
         else:
             helpNB = Notebook(self.helpWindow)
             helpNB.enable_traversal()
-            helpNB.grid(column=0, row=0, sticky=N+S+E+W)
-            
+            helpNB.grid(column=0, row=0, sticky=N + S + E + W)
+
             tabs = [(self.helpBasicRules, "Basic Rules"),
                     (self.helpUnits, "Units"),
                     (self.helpMore, "Optional Rules")]
-            
+
             for f, title in tabs:
                 frame = Frame(self.helpWindow)
                 tab = f(frame)
@@ -407,17 +408,23 @@ class Application:
 
         btnOK = Button(self.helpWindow, text="OK", command=self.closeHelp)
         btnOK.grid(column=0, row=1, columnspan=2, ipadx=15, pady=8)
-        
+
+        self.root.update_idletasks()
+        w, h = self.helpWindow.geometry().split("+")[0].split("x")
+        print self.helpWindow.geometry(), w, h
+        self.helpWindow.minsize(w, h)
+        self.helpWindow.maxsize(w, h)
+
     def helpBasicRules(self, frame):
         """Show a text about the basic game rules in the help dialog"""
 
         paragraphs = [
-        ("Introduction","""
+        ("Introduction", """
         The goal of %s is to capture your enemy's flag while protecting your own. 
         If you take the enemy flag or if the enemy has no movable pieces left, you win.  
         To achieve this, you have a set of units with different strengths and abilities.
-        For more details about the units, see the corresponding help page.""" % (GAME_NAME)), 
-                 
+        For more details about the units, see the corresponding help page.""" % (GAME_NAME)),
+
         ("Army Placement", """
         The game starts with an empty board, and it is up to you to place your units in a strong formation.
         Put your flag in a safe place and use bombs for extra protection, but don't block your own troops.
@@ -427,60 +434,66 @@ class Application:
         ("Movement", """
         A player can move one unit each turn. Most units can move a single tile per turn.
         The exceptions are scouts, who can move farther, and bombs and flags, which cannot move.
-        You can never moved to a tile occupied by a friendly piece or by water."""),  
+        You can never moved to a tile occupied by a friendly piece or by water."""),
 
         ("Battles", """
         When a player moves a unit to a tile occupied by a unit of the opposing army, there is a fight.
         Both players get to see the rank of the enemy piece, and the weaker piece dies.
         If the pieces are of equal rank, both die.""")]
-        
-        txt = Text(frame, height=40, background = HELP_BG)
-        txt.tag_config("title", font=("Times", 12, "bold"), underline=1)
-        txt.tag_config("main", font=("Arial", 11))
-        wrapper = TextWrapper(width=100)
-        
+
+        txt = Text(frame, height=40, background=HELP_BG, padx=20, pady=20)
+        txt.tag_config("title", font=HELP_TITLE_FONT, underline=1)
+        txt.tag_config("main", font=HELP_BODY_FONT)
+        wrapper = TextWrapper(width=80)
+
         for p in paragraphs:
-            txt.insert(END, p[0]+"\n\n", "title")
-            wrappedText = wrapper.fill(dedent(p[1]))+"\n\n"
+            txt.insert(END, p[0] + "\n\n", "title")
+            wrappedText = wrapper.fill(dedent(p[1])) + "\n\n"
             txt.insert(END, wrappedText, "main")
-        txt.grid(sticky=N+S+E+W)
+        txt.grid(sticky=N + S + E + W)
         txt.config(state=DISABLED)
         return frame
-        
+
     def helpUnits(self, frame):
         """Show help about units"""
-        
+
         self.helpImage = Image.open("help.png")
         self.helpImage = ImageTk.PhotoImage(self.helpImage)
         lbl = Label(frame, image=self.helpImage)
         lbl.grid(column=0, row=0, sticky="ew")
-        return frame    
-            
+        return frame
+
     def helpMore(self, frame):
         """Show help about special options and rules, different from classic Stratego"""
-        
-        #TODO: finish the text for this tab
+
         paragraphs = [(
         "Special Rules", """
         %s includes several optional variations on the classic board game Stratego,
         and they are explained here.""" % (GAME_NAME)),
-                      
+
         ("Diagonal movement", """
-        Bla bla"""),
-        
+        Enabling units to move diagonally, instead of only horizontally and vertically, 
+        leads to important differences in strategy. You will have to rethink how to protect your flag
+        or how to escort your spy."""),
+
         ("Board size", """
-        Bla bla""")]
+        Playing on a different board size automatically scales your army. You can play a game on a smaller board for 
+        some quick fun, or accept the challenge of playing on an extra large board where it might to hundreds of turns
+        to resolve the battle.
         
-        txt = Text(frame, background = HELP_BG)
-        txt.tag_config("title", font=("Times", 12, "bold"), underline=1)
-        txt.tag_config("main", font=("Times", 11))
-        wrapper = TextWrapper(width=100)
-        
+        :)  
+        """)]
+
+        txt = Text(frame, height=40, background=HELP_BG, padx=20, pady=20)
+        txt.tag_config("title", font=HELP_TITLE_FONT, underline=1)
+        txt.tag_config("main", font=HELP_BODY_FONT)
+        wrapper = TextWrapper(width=80)
+
         for p in paragraphs:
-            txt.insert(END, p[0]+"\n\n", "title")
-            wrappedText = wrapper.fill(dedent(p[1]))+"\n\n"
+            txt.insert(END, p[0] + "\n\n", "title")
+            wrappedText = wrapper.fill(dedent(p[1])) + "\n\n"
             txt.insert(END, wrappedText, "main")
-        txt.grid(sticky=N+S+E+W)
+        txt.grid(sticky=N + S + E + W)
         txt.config(state=DISABLED)
         return frame
 
@@ -566,7 +579,7 @@ class Application:
                              int((new[0] + 0.5) * TILE_PIX), int((new[1] + 0.5) * TILE_PIX),
                              width=3, fill=MOVE_ARROW_COLOR, arrow=LAST, arrowshape="8 10 6",
                              tags="moveArrow")
-        
+
     def clearMoveArrows(self):
         self.map.delete("moveArrow")
 
@@ -607,31 +620,31 @@ class Application:
         # draw hilight
         canvas.create_rectangle(x * TILE_PIX, y * TILE_PIX,
                                 (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
-                                fill=hilight, outline=None, tags="u"+str(id(unit)))
+                                fill=hilight, outline=None, tags="u" + str(id(unit)))
         # draw shadow
         canvas.create_rectangle(x * TILE_PIX + TILE_BORDER, y * TILE_PIX + TILE_BORDER,
                                 (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
-                                fill=shadow, outline=None, width=0, tags="u"+str(id(unit)))
+                                fill=shadow, outline=None, width=0, tags="u" + str(id(unit)))
         # draw center
         canvas.create_rectangle(x * TILE_PIX + TILE_BORDER, y * TILE_PIX + TILE_BORDER,
                                 (x + 1) * TILE_PIX - TILE_BORDER, (y + 1) * TILE_PIX - TILE_BORDER,
-                                fill=color, outline=None, width=0, tags="u"+str(id(unit)))
+                                fill=color, outline=None, width=0, tags="u" + str(id(unit)))
 
         if unit.color == "Red" or self.debug or not unit.alive or self.won or unit.justAttacked:
             unit.justAttacked = False
             canvas.create_image(x * TILE_PIX, y * TILE_PIX,
-                                image=self.unitIcons.getIcon(unit.name), anchor=NW, tags="u"+str(id(unit)))
+                                image=self.unitIcons.getIcon(unit.name), anchor=NW, tags="u" + str(id(unit)))
             if unit.name != "Bomb" and unit.name != "Flag":
                 canvas.create_text(((x + .2) * TILE_PIX, (y + .8) * TILE_PIX),
-                                   text=unit.rank, fill=MOVE_ARROW_COLOR, tags="u"+str(id(unit)))
+                                   text=unit.rank, fill=MOVE_ARROW_COLOR, tags="u" + str(id(unit)))
 
         if not unit.alive:
-            canvas.create_line(x * TILE_PIX, y * TILE_PIX, 
-                               (x + 1) * TILE_PIX, (y + 1) * TILE_PIX, 
-                               tags="u"+str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
+            canvas.create_line(x * TILE_PIX, y * TILE_PIX,
+                               (x + 1) * TILE_PIX, (y + 1) * TILE_PIX,
+                               tags="u" + str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
             canvas.create_line(x * TILE_PIX, (y + 1) * TILE_PIX,
                                (x + 1) * TILE_PIX, y * TILE_PIX,
-                               tags="u"+str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
+                               tags="u" + str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
 
     def isPool(self, x, y):
         """Check whether there is a pool at tile (x,y)."""
@@ -703,7 +716,7 @@ class Application:
         if y < (BOARD_WIDTH - self.armyHeight):
             self.setStatusBar("Must place unit in the first %i rows" % self.armyHeight)
             return
-        
+
         if x < 0 or x >= BOARD_WIDTH:
             self.setStatusBar("You can't place a unit off the edge of the board!")
             return
@@ -734,17 +747,17 @@ class Application:
         (i, j) = self.clickedUnit.getPosition()
         if abs(i - x) > 1 or abs(j - y) > 1:
             self.clickedUnit.isKnown = True
-            
+
         # Do move animation
-        stepSize = TILE_PIX/MOVE_ANIM_STEPS
-        dx = x-i
-        dy = y-j
+        stepSize = TILE_PIX / MOVE_ANIM_STEPS
+        dx = x - i
+        dy = y - j
         self.clearMoveArrows()
-        
+
         if self.animationsOn.get():
             for _step in range(MOVE_ANIM_STEPS):
-                self.root.after(MOVE_ANIM_FRAMERATE, 
-                    self.map.move("u"+str(id(self.clickedUnit)), stepSize*dx, stepSize*dy))
+                self.root.after(MOVE_ANIM_FRAMERATE,
+                    self.map.move("u" + str(id(self.clickedUnit)), stepSize * dx, stepSize * dy))
                 self.root.update_idletasks()
 
         target = self.getUnit(x, y)
@@ -824,18 +837,18 @@ class Application:
 
             unit = self.getUnit(oldlocation[0], oldlocation[1])
             unit.hasMoved = True
-            
+
             # Do move animation
-            stepSize = TILE_PIX/MOVE_ANIM_STEPS
-            dx = move[0]-oldlocation[0]
-            dy = move[1]-oldlocation[1]
+            stepSize = TILE_PIX / MOVE_ANIM_STEPS
+            dx = move[0] - oldlocation[0]
+            dy = move[1] - oldlocation[1]
 
             if self.animationsOn.get():
                 for _step in range(MOVE_ANIM_STEPS):
-                    self.root.after(MOVE_ANIM_FRAMERATE, 
-                        self.map.move("u"+str(id(unit)), stepSize*dx, stepSize*dy))
-                    self.root.update_idletasks() 
-                                
+                    self.root.after(MOVE_ANIM_FRAMERATE,
+                        self.map.move("u" + str(id(unit)), stepSize * dx, stepSize * dy))
+                    self.root.update_idletasks()
+
             self.drawMoveArrow(oldlocation, move)
             enemy = self.getUnit(move[0], move[1])
             if enemy:
@@ -857,9 +870,9 @@ class Application:
 
             self.setStatusBar("%s moves unit at (%s,%s) to (%s,%s)" % (self.turn,
                                                                        oldlocation[0], oldlocation[1],
-                                                                       move[0], move[1]))              
+                                                                       move[0], move[1]))
             self.drawMap()
-            if not enemy: 
+            if not enemy:
                 self.drawMoveArrow(oldlocation, move)
             self.drawSidePanels()
 
@@ -933,7 +946,7 @@ class Application:
 
     def attack(self, attacker, defender):
         """Show the outcome of an attack and remove defeated pieces from the board"""
-        
+
         ######## 
         if attacker.color == "Red":
             attackerArmy = self.redArmy
@@ -1075,47 +1088,47 @@ class Application:
         self.drawSidePanels()
         self.clickedUnit = None
         self.movingUnit = False
-        
+
     def closeBattleResultWindow(self, event=None):
         """Called by key event to close the battle result window"""
         self.battleResultDialog.destroy()
-        
+
     def trumps(self, unitA, unitB):
         """Check the (potential) outcome of a battle without changing the game state"""
         pass
-        
+
 
     def getUnit(self, x, y):
         """Return unit at a certain position"""
         return self.redArmy.getUnit(x, y) or self.blueArmy.getUnit(x, y)
-    
+
     def getAdjacent(self, x, y):
         """ Return a list of directly adjacent tile coordinates, considering the edge of the board
         and whether or not diagonal movement is enabled."""
-        
+
         adjacent = []
-        
+
         if x > 0:
-            adjacent += [(x-1, y)] # West
+            adjacent += [(x - 1, y)] # West
             if self.diagonal:
                 if y > 0:
-                    adjacent += [(x-1, y-1)] # Northwest
+                    adjacent += [(x - 1, y - 1)] # Northwest
                 elif y < BOARD_WIDTH - 1:
-                    adjacent += [(x-1, y+1)] # Southwest
+                    adjacent += [(x - 1, y + 1)] # Southwest
         if y > 0:
-            adjacent += [(x,y-1)] # North
+            adjacent += [(x, y - 1)] # North
         if y < BOARD_WIDTH - 1:
-            adjacent += [(x,y+1)] # South
+            adjacent += [(x, y + 1)] # South
         if x < BOARD_WIDTH - 1:
-            adjacent += [(x+1, y)] # East
+            adjacent += [(x + 1, y)] # East
             if self.diagonal:
                 if x > 0:
-                    adjacent += [(x+1, y-1)] # Southwest
+                    adjacent += [(x + 1, y - 1)] # Southwest
                 if x < BOARD_WIDTH - 1:
-                    adjacent += [(x+1, y+1)] # Southeast
-        
+                    adjacent += [(x + 1, y + 1)] # Southeast
+
         return adjacent
-    
+
     def toggleDebug(self, event):
         self.debug = not self.debug
         self.drawMap()
@@ -1281,8 +1294,6 @@ class Launcher():
         self.backgrounds = len([x for x in os.listdir("backgrounds") if "background" in x ])
         self.bgcanvas = Canvas(self.top, width=900, height=600, bd=0)
         self.bgcanvas.place(x=0, y=0)
-        self.titleFont = tkFont.Font(family="Times", size=64, slant=tkFont.ITALIC, weight=tkFont.BOLD, underline=True)
-        self.subtitleFont = tkFont.Font(family="Helvetica", size=14, weight=tkFont.BOLD)
         self.newBackground()
         self.playMusic()
 
@@ -1338,8 +1349,8 @@ class Launcher():
         im = Image.open("backgrounds/background" + i + ".jpg").resize((900, 600))
         self.bgim = ImageTk.PhotoImage(im)
         self.bgid = self.bgcanvas.create_image(0, 0, image=self.bgim, anchor=NW)
-        self.textid = self.bgcanvas.create_text((200, 80), text=GAME_NAME, font=self.titleFont)
-        self.bgcanvas.create_text((200, 142), text=AUTHORS, font=self.subtitleFont)
+        self.textid = self.bgcanvas.create_text((200, 80), text=GAME_NAME, font=LAUNCHER_TITLE_FONT, underline=9)
+        self.bgcanvas.create_text((200, 142), text=AUTHORS, font=LAUNCHER_AUTHOR_FONT)
         self.top.after(10000, self.newBackground)
 
     def playMusic(self):

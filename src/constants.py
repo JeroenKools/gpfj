@@ -35,7 +35,12 @@ SHADOW_BLUE_COLOR = "#006"
 MOVE_ANIM_STEPS = 10        # number of frames in move animations
 MOVE_ANIM_FRAMERATE = 15    # time between animation frames in milliseconds
 
-HELP_BG = "gray90"
+HELP_BG = "#f0f0f0"
+HELP_TITLE_FONT = ("Segoe UI", 12, "bold")
+HELP_BODY_FONT = ("Segoe UI", 11)
+
+LAUNCHER_TITLE_FONT = ("Times", 64, "bold italic underline")
+LAUNCHER_AUTHOR_FONT = ("Helvetica", 14, "bold")
 
 ## AUDIO ##
 MUSIC_DIR = "music"
