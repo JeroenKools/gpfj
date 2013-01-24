@@ -25,6 +25,7 @@ import Image, ImageTk
 
 # Modules that are part of the game
 from Army import Army, Icons
+import explosion
 from constants import *     #@UnusedWildImport
 from brains import *        #@UnusedWildImport
 BRAINLIST = [module[1] for module in pkgutil.iter_modules(['brains']) if not module[1] == "Brain"]
@@ -384,6 +385,7 @@ class Application:
         """Show a window with information about the game rules and the different pieces"""
 
         self.helpWindow = Toplevel(width=400, height=640)
+        setIcon(self.helpWindow, "flag")
 
         # Python 2.6 doesn't have the fancy ttk notebook widget, so it
         # will have to make do with the plain old help
@@ -638,9 +640,9 @@ class Application:
                                    text=unit.rank, fill=MOVE_ARROW_COLOR, tags="u" + str(id(unit)))
 
         if not unit.alive:
-            canvas.create_line(x * self.tilePix, y * self.tilePix, 
-                               (x + 1) * self.tilePix, (y + 1) * self.tilePix, 
-                               tags="u"+str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
+            canvas.create_line(x * self.tilePix, y * self.tilePix,
+                               (x + 1) * self.tilePix, (y + 1) * self.tilePix,
+                               tags="u" + str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
             canvas.create_line(x * self.tilePix, (y + 1) * self.tilePix,
                                (x + 1) * self.tilePix, y * self.tilePix,
                                tags="u" + str(id(unit)), width=3, fill=DEAD_COLOR, capstyle=ROUND)
@@ -652,10 +654,11 @@ class Application:
         if  (self.boardWidth % 2 == 1 and y == self.boardWidth / 2) or \
             ((self.boardWidth % 2 == 0) and (y == self.boardWidth / 2 or y == (self.boardWidth / 2) - 1)):
 
-            if sin(2 * pi * (x + .5) / self.boardWidth * (self.pools + 0.5)) < 0:
-                return True
-            else:
-                return False
+            return sin(2 * pi * (x + .5) / BOARD_WIDTH * (POOLS + 0.5)) < 0
+
+    def isPoolColumn(self, x):
+        """Check whether there is a pool in column x"""
+        return sin(2 * pi * (x + .5) / BOARD_WIDTH * (POOLS + 0.5)) < 0
 
     def rightClick(self, event):
         """Deal with right-click (i.e., deselect selected unit"""
@@ -748,9 +751,9 @@ class Application:
             self.clickedUnit.isKnown = True
 
         # Do move animation
-        stepSize = self.tilePix/MOVE_ANIM_STEPS
-        dx = x-i
-        dy = y-j
+        stepSize = self.tilePix / MOVE_ANIM_STEPS
+        dx = x - i
+        dy = y - j
         self.clearMoveArrows()
 
         if self.animationsOn.get():
@@ -838,9 +841,9 @@ class Application:
             unit.hasMoved = True
 
             # Do move animation
-            stepSize = self.tilePix/MOVE_ANIM_STEPS
-            dx = move[0]-oldlocation[0]
-            dy = move[1]-oldlocation[1]
+            stepSize = self.tilePix / MOVE_ANIM_STEPS
+            dx = move[0] - oldlocation[0]
+            dy = move[1] - oldlocation[1]
 
             if self.animationsOn.get():
                 for _step in range(MOVE_ANIM_STEPS):
@@ -959,7 +962,6 @@ class Application:
             if attacker.hasMoved:
                 attackerArmy.nrOfUnknownMoved -= 1
             attacker.hasMoved = True
-            #attackerArmy.nrOfMoved += 1
             attackerArmy.nrOfKnownMovable += 1
             for unit in attackerArmy.army:
                 if unit == attacker:
@@ -971,7 +973,6 @@ class Application:
             if defender.hasMoved:
                 defenderArmy.nrOfUnknownMoved -= 1
             defender.hasMoved = True #Although it not moved, it is known and attacked, so..
-            #defenderArmy.nrOfMoved += 1
             defenderArmy.nrOfKnownMovable += 1
             for unit in defenderArmy.army:
                 if unit == defender:
@@ -1010,6 +1011,21 @@ class Application:
             if (abs(attacker.position[0] - self.redArmy.army[0].position[0]) + abs(attacker.position[1] - self.redArmy.army[0].position[1]) == 1):
                 self.redArmy.flagIsBombProtected = False
 
+        elif defender.name == "Bomb":
+            x, y = defender.getPosition()
+            x = (x + .5) * self.tilePix
+            y = (y + .5) * self.tilePix
+
+            attackerTag = "u" + str(id(attacker))
+            attacker.die()
+            #print 'attacker:', attackerTag, self.map.find_withtag(attackerTag)
+
+            self.root.after(200, lambda: self.map.delete(attackerTag))
+            explosion.kaboom(x, y, 5, self.map, self.root)
+            text += "\nThe %s was blown to pieces." % attacker.name
+
+            attackerArmy.nrOfLiving -= 1
+            attackerArmy.nrOfKnownMovable -= 1
 
         elif attacker.canKillMarshal and defender.name == "Marshal":
             attacker.position = defender.position
@@ -1068,6 +1084,8 @@ class Application:
 
             ok = Button(self.battleResultDialog, text="OK", command=self.closeBattleResultWindow)
             ok.grid(row=1, column=1, ipadx=15, ipady=5, pady=5)
+
+            # sound effects
             if defender.name == "Bomb":
                 if attacker.canDefuseBomb:
                     self.playSound(SOUND_DEFUSE)
@@ -1199,7 +1217,7 @@ class Application:
         ok.grid(row=1, column=0, columnspan=2, ipadx=15, ipady=5, pady=5)
 
         message.configure(width=40, justify=CENTER, wraplength=150)
-        self.setStatusBar("%s has won the game!" % color)
+        self.setStatusBar("%s has won the game in %i turns!" % (color, self.turnNr))
         if color == "Red":
             self.playSound(SOUND_WIN)
         else:
