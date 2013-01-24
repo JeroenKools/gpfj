@@ -81,28 +81,30 @@ class Application:
         menuBar = Menu(root)
 
         fileMenu = Menu(menuBar, tearoff=0)
-        fileMenu.add_command(label="New Game", command=self.confirmNewGame)
-        fileMenu.add_command(label="Load Game", command=self.loadGame)
-        fileMenu.add_command(label="Save Game", command=self.saveGame)
+        fileMenu.add_command(label="New Game", command=self.confirmNewGame, underline=0, accelerator="Ctrl+N")
+        fileMenu.add_command(label="Load Game", command=self.loadGame, underline=0, accelerator="Ctrl+L")
+        fileMenu.add_command(label="Save Game", command=self.saveGame, underline=0, accelerator="Ctrl+S")
         fileMenu.add_separator()
-        fileMenu.add_command(label="Exit", command=self.exit)
+        fileMenu.add_command(label="Exit", command=self.exit, underline=1, accelerator= "Esc")
         menuBar.add_cascade(label="File", menu=fileMenu)
 
         optionMenu = Menu(menuBar, tearoff=0)
-        optionMenu.add_command(label="Settings", command=self.settings)
-        optionMenu.add_command(label="Statistics", command=self.showStats)
+        optionMenu.add_command(label="Settings", command=self.settings, underline=6)
+        optionMenu.add_command(label="Statistics", command=self.showStats, underline=1)
         self.animationsOn = BooleanVar()
-        optionMenu.add_checkbutton(label="Animations", onvalue=True, offvalue=False, variable=self.animationsOn)
+        optionMenu.add_checkbutton(label="Animations", onvalue=True, offvalue=False, 
+                                   variable=self.animationsOn, underline=0)
         self.animationsOn.set(True)
         self.soundOn = BooleanVar()
-        optionMenu.add_checkbutton(label="Sound effects", onvalue=True, offvalue=False, variable=self.soundOn)
+        optionMenu.add_checkbutton(label="Sound effects", onvalue=True, offvalue=False,
+                                   variable=self.soundOn, underline=7)
         self.soundOn.set(True)
         menuBar.add_cascade(label="Options", menu=optionMenu)
 
         helpmenu = Menu(menuBar, tearoff=0)
-        helpmenu.add_command(label="Help", command=self.helpMe)
-        helpmenu.add_command(label="Visit Website", command=self.visitWebsite)
-        helpmenu.add_command(label="About", command=self.about)
+        helpmenu.add_command(label="Help", command=self.helpMe, accelerator="F1", underline=0)
+        helpmenu.add_command(label="Visit Website", command=self.visitWebsite, underline=0)
+        helpmenu.add_command(label="About", command=self.about, underline=0)
         menuBar.add_cascade(label="Help", menu=helpmenu)
 
         root.config(menu=menuBar)
@@ -156,6 +158,9 @@ class Application:
         self.root.bind("<Button-3>", self.rightClick)
         self.root.bind("p", self.quickplace)
         self.root.bind("<Control-d>", self.toggleDebug)
+        self.root.bind("<Control-n>", self.confirmNewGame)
+        self.root.bind("<Control-l>", self.loadGame)
+        self.root.bind("<Control-s>", self.saveGame)
         self.root.bind("<F1>", self.helpMe)
         self.root.protocol("WM_DELETE_WINDOW", self.exit)
 
@@ -206,7 +211,7 @@ class Application:
         self.drawMap()
         self.setStatusBar("Place your army, or press 'p' for random placement")
 
-    def loadGame(self):
+    def loadGame(self, event=None):
         """Open a load dialog, and then load the selected save file and continue playing that game"""
 
         loadFilename = tkFileDialog.askopenfilename(defaultextension=".sav",
@@ -231,7 +236,7 @@ class Application:
                 self.drawSidePanels()
                 self.setStatusBar("Game loaded!")
 
-    def saveGame(self):
+    def saveGame(self, event=None):
         """Open a save dialog and save the current game to the selected file"""
 
         saveFilename = tkFileDialog.asksaveasfilename(defaultextension=".sav",
@@ -254,6 +259,7 @@ class Application:
         """Show a window that allows the user to change several game settings"""
 
         self.settingsWindow = Toplevel(width=300)
+        setIcon(self.settingsWindow, "flag")
 
         # OPPONENT
         lblBrain = Label(self.settingsWindow, text="Opponent Brain")
@@ -412,7 +418,6 @@ class Application:
 
         self.root.update_idletasks()
         w, h = self.helpWindow.geometry().split("+")[0].split("x")
-        print self.helpWindow.geometry(), w, h
         self.helpWindow.minsize(w, h)
         self.helpWindow.maxsize(w, h)
 
