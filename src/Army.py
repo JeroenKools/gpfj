@@ -16,7 +16,6 @@ class Army:
         self.livingPossibleUnmovableRanks = []
         self.nrOfMoved = 0
         self.nrOfLiving = 0
-        #self.nrOfKnownUnmovable = 0
         self.nrOfUnknownMoved = 0
         self.nrOfKnownMovable = 0
         self.nrOfKnownUnmovable = 0
@@ -50,9 +49,6 @@ class Army:
                 self.army.append(Bomb())
 
             self.army.append(Spy())
-
-        else:
-            pass # TODO: add other army options
 
         self.nr_of_bombs = 0;
 
@@ -127,7 +123,7 @@ class Unit:
         self.hasMovedFar = False
         self.isKnown = False          # whether the AI already knows this piece's rank 
         self.possibleMovableRanks = []
-        self.possibleUnmovableRanks = [] 
+        self.possibleUnmovableRanks = []
 
     def getPosition(self):
         return self.position
