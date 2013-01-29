@@ -23,7 +23,7 @@ class Brain(randomBrain.Brain):
 
 To make the game able to use your brain script, you need to insert the name of the file in {{{brains\__init__.py}}}.
 
-For example, the resulting __init__.py could look like this:
+For example, if you named your customized brain {{{myCustomBrain.py}}}, the resulting __init__.py should look like this:
 
 {{{
 __all__ = ["Brain",
