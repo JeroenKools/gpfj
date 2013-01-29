@@ -1,4 +1,4 @@
-#Adding new computer opponents to Kindral
+#summary Adding new computer opponents to Kindral
 
 If you know some Python, it is easy to add your own computer opponent, or "brain", to Kindral, whether you are using the .exe or the source code.
 
