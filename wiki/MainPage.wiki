@@ -1,7 +1,0 @@
-#summary Kindral wiki main page
-
-The wiki contains the following pages:
-
- * [Installation]
- * [Modding]
- 
