@@ -6,7 +6,7 @@ Created on 28 jun. 2012
 """
 
 GAME_NAME = "Kindral"      # Kindral? Praetor? Napoleon? Austerlitz?
-VERSION = "0.56"           # Game version
+VERSION = "0.57"           # Game version
 
 AUTHORS = "Jeroen Kools & Fedde Burgers"
 URL = "http://code.google.com/p/gpfj"
