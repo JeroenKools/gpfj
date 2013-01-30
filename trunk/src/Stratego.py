@@ -15,6 +15,7 @@ from textwrap import fill, dedent, TextWrapper
 from random import randint, choice, random
 import platform as pf
 import pkgutil
+import time
 
 # Tkinter and PIL for GUI and graphics
 from Tkinter import *       #@UnusedWildImport
@@ -99,7 +100,12 @@ class Application:
         optionMenu.add_checkbutton(label="Sound effects", onvalue=True, offvalue=False,
                                    variable=self.soundOn, underline=7)
         self.soundOn.set(True)
+        
+        toolsMenu = Menu(menuBar, tearoff=0)
         menuBar.add_cascade(label="Options", menu=optionMenu)
+        toolsMenu.add_command(label="Auto-place", command=self.quickplace, underline=0, accelerator="P")
+        toolsMenu.add_command(label="Random move", command=self.randomMove, underline=0, accelerator="R")
+        menuBar.add_cascade(label="Tools", menu=toolsMenu)
 
         helpmenu = Menu(menuBar, tearoff=0)
         helpmenu.add_command(label="Help", command=self.helpMe, accelerator="F1", underline=0)
@@ -157,6 +163,7 @@ class Application:
         self.map.bind("<Button-1>", self.mapClick)
         self.root.bind("<Button-3>", self.rightClick)
         self.root.bind("p", self.quickplace)
+        self.root.bind("r", self.randomMove)
         self.root.bind("<Control-d>", self.toggleDebug)
         self.root.bind("<Control-n>", self.confirmNewGame)
         self.root.bind("<Control-l>", self.loadGame)
@@ -742,7 +749,7 @@ class Application:
     def moveUnit(self, x, y):
         """Move a unit according to selected unit and clicked destination"""
         if not self.legalMove(self.clickedUnit, x, y):
-            self.setStatusBar("You can't move there!")
+            self.setStatusBar("You can't move there! If you want, you can right click to deselect the currently selected unit.")
             return
 
         if self.clickedUnit.color == "Red":
@@ -1234,7 +1241,7 @@ class Application:
             winsound.PlaySound("%s/%s" % (SOUND_DIR, name),
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
 
-    def quickplace(self, event):
+    def quickplace(self, event=None):
         """Let the computer place human player's pieces randomly"""
         if not self.started:
             tempBrain = randomBrain.Brain(self, self.redArmy, self.boardWidth)
@@ -1244,6 +1251,43 @@ class Application:
             self.drawSidePanels()
             self.setStatusBar("Randomly placed your army!")
             self.started = True
+            
+    def randomMove(self, event = None):
+        if not self.started: return
+        tempBrain = randomBrain.Brain(self, self.redArmy, self.boardWidth)
+        (oldlocation, move) = tempBrain.findMove()
+        unit = self.getUnit(oldlocation[0], oldlocation[1])
+        
+        self.movingUnit = True
+        self.clickedUnit = unit
+        #self.drawUnit(self.map, unit, move[0], move[1], SELECTED_RED_PLAYER_COLOR)
+        
+        unit.hasMoved = True
+
+        # Do move animation
+        stepSize = self.tilePix / MOVE_ANIM_STEPS
+        dx = move[0] - oldlocation[0]
+        dy = move[1] - oldlocation[1]
+        self.drawMoveArrow(oldlocation, move)
+
+        if self.animationsOn.get():
+            for _step in range(MOVE_ANIM_STEPS):
+                self.root.after(MOVE_ANIM_FRAMERATE,
+                    self.map.move("u" + str(id(unit)), stepSize * dx, stepSize * dy))
+                self.root.update_idletasks()
+                
+        enemy = self.getUnit(move[0], move[1])
+        if enemy:
+            self.attack(unit, enemy)
+        else:
+            unit.setPosition(move[0], move[1])  
+            
+        self.clickedUnit = None
+        self.movingUnit = False
+        self.drawMap()
+        self.drawMoveArrow(oldlocation, move)
+        time.sleep(.5)
+        self.endTurn()      
 
     def exit(self, event=None):
         """Quit program."""
