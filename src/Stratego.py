@@ -18,7 +18,7 @@ import pkgutil
 import time
 
 # Tkinter and PIL for GUI and graphics
-from Tkinter import *       #@UnusedWildImport
+from Tkinter import *  # @UnusedWildImport
 import tkMessageBox
 import tkFileDialog
 import tkFont
@@ -27,8 +27,8 @@ import Image, ImageTk
 # Modules that are part of the game
 from Army import Army, Icons
 import explosion
-from constants import *     #@UnusedWildImport
-from brains import *        #@UnusedWildImport
+from constants import *  # @UnusedWildImport
+from brains import *  # @UnusedWildImport
 BRAINLIST = [module[1] for module in pkgutil.iter_modules(['brains']) if not module[1] == "Brain"]
 
 # Some system dependent imports
@@ -45,9 +45,12 @@ if not py26:
 
 if platform == "Windows":
     import winsound
-    import mp3play #@UnresolvedImport
     canPlaySound = True
-    canPlayMusic = True
+    try:
+        import mp3play
+        canPlayMusic = True
+    except ImportError:
+        canPlayMusic = False
 else:
     canPlaySound = False
     canPlayMusic = False
@@ -55,7 +58,7 @@ else:
 def setIcon(window, icon):
     """Set the icon of a Tk root or toplevel window to a given .ico or .xbm file, 
     depending on the operating system"""
-    #TODO: Mac  
+    # TODO: Mac
     if not platform == "Linux":
         window.wm_iconbitmap("%s/%s.ico" % (ICON_DIR, icon))
     else:
@@ -86,21 +89,21 @@ class Application:
         fileMenu.add_command(label="Load Game", command=self.loadGame, underline=0, accelerator="Ctrl+L")
         fileMenu.add_command(label="Save Game", command=self.saveGame, underline=0, accelerator="Ctrl+S")
         fileMenu.add_separator()
-        fileMenu.add_command(label="Exit", command=self.exit, underline=1, accelerator= "Esc")
+        fileMenu.add_command(label="Exit", command=self.exit, underline=1, accelerator="Esc")
         menuBar.add_cascade(label="File", menu=fileMenu)
 
         optionMenu = Menu(menuBar, tearoff=0)
         optionMenu.add_command(label="Settings", command=self.settings, underline=6)
         optionMenu.add_command(label="Statistics", command=self.showStats, underline=1)
         self.animationsOn = BooleanVar()
-        optionMenu.add_checkbutton(label="Animations", onvalue=True, offvalue=False, 
+        optionMenu.add_checkbutton(label="Animations", onvalue=True, offvalue=False,
                                    variable=self.animationsOn, underline=0)
         self.animationsOn.set(True)
         self.soundOn = BooleanVar()
         optionMenu.add_checkbutton(label="Sound effects", onvalue=True, offvalue=False,
                                    variable=self.soundOn, underline=7)
         self.soundOn.set(True)
-        
+
         toolsMenu = Menu(menuBar, tearoff=0)
         menuBar.add_cascade(label="Options", menu=optionMenu)
         toolsMenu.add_command(label="Auto-place", command=self.quickplace, underline=0, accelerator="P")
@@ -115,7 +118,7 @@ class Application:
 
         root.config(menu=menuBar)
 
-        # Create toolbar        
+        # Create toolbar
         toolbar = Frame(root)
         Button(toolbar, text="New", width=6, command=self.confirmNewGame).pack(side=LEFT, padx=2, pady=2)
         Button(toolbar, text="Load", width=6, command=self.loadGame).pack(side=LEFT, padx=2, pady=2)
@@ -145,7 +148,7 @@ class Application:
         for child in self.sidePanel.winfo_children():
             child.bind("<Button-1>", self.panelClick)
 
-        # Create map 
+        # Create map
         self.boardsize = self.boardWidth * self.tilePix
         grassImage = Image.open("%s/%s" % (TERRAIN_DIR, LAND_TEXTURE))
         grassImage = grassImage.resize((self.boardWidth * self.tilePix, self.boardWidth * self.tilePix), Image.BICUBIC)
@@ -757,7 +760,7 @@ class Application:
         else:
             thisArmy = self.blueArmy
 
-        # Moving more than one tile will "expose" the unit as a scout 
+        # Moving more than one tile will "expose" the unit as a scout
         (i, j) = self.clickedUnit.getPosition()
         if abs(i - x) > 1 or abs(j - y) > 1:
             self.clickedUnit.isKnown = True
@@ -779,7 +782,7 @@ class Application:
             if target.color == self.clickedUnit.color and self.started:
                 self.setStatusBar("You can't move there - tile already occupied!")
 
-            elif target.color == self.clickedUnit.color and not self.started: # switch units
+            elif target.color == self.clickedUnit.color and not self.started:  # switch units
                     (xold, yold) = self.clickedUnit.getPosition()
                     target.setPosition(xold, yold)
                     self.clickedUnit.setPosition(x, y)
@@ -841,7 +844,7 @@ class Application:
         self.turn = self.otherPlayer(self.turn)
         self.turnNr += 1
 
-        if self.brains[self.turn] and not self.won: # computer player?
+        if self.brains[self.turn] and not self.won:  # computer player?
             (oldlocation, move) = self.brains[self.turn].findMove()
 
             # check if the opponent can move
@@ -961,7 +964,7 @@ class Application:
     def attack(self, attacker, defender):
         """Show the outcome of an attack and remove defeated pieces from the board"""
 
-        ######## 
+        ########
         if attacker.color == "Red":
             attackerArmy = self.redArmy
             defenderArmy = self.blueArmy
@@ -984,7 +987,7 @@ class Application:
         if defender.canMove and not defender.isKnown:
             if defender.hasMoved:
                 defenderArmy.nrOfUnknownMoved -= 1
-            defender.hasMoved = True #Although it not moved, it is known and attacked, so..
+            defender.hasMoved = True  # Although it not moved, it is known and attacked, so..
             defenderArmy.nrOfKnownMovable += 1
             for unit in defenderArmy.army:
                 if unit == defender:
@@ -1030,7 +1033,7 @@ class Application:
 
             attackerTag = "u" + str(id(attacker))
             attacker.die()
-            #print 'attacker:', attackerTag, self.map.find_withtag(attackerTag)
+            # print 'attacker:', attackerTag, self.map.find_withtag(attackerTag)
 
             self.root.after(200, lambda: self.map.delete(attackerTag))
             explosion.kaboom(x, y, 5, self.map, self.root)
@@ -1138,23 +1141,23 @@ class Application:
         adjacent = []
 
         if x > 0:
-            adjacent += [(x - 1, y)] # West
+            adjacent += [(x - 1, y)]  # West
             if self.diagonal:
                 if y > 0:
-                    adjacent += [(x - 1, y - 1)] # Northwest
+                    adjacent += [(x - 1, y - 1)]  # Northwest
                 elif y < self.boardWidth - 1:
-                    adjacent += [(x - 1, y + 1)] # Southwest
+                    adjacent += [(x - 1, y + 1)]  # Southwest
         if y > 0:
-            adjacent += [(x, y - 1)] # North
+            adjacent += [(x, y - 1)]  # North
         if y < self.boardWidth - 1:
-            adjacent += [(x, y + 1)] # South
+            adjacent += [(x, y + 1)]  # South
         if x < self.boardWidth - 1:
-            adjacent += [(x + 1, y)] # East
+            adjacent += [(x + 1, y)]  # East
             if self.diagonal:
                 if x > 0:
-                    adjacent += [(x + 1, y - 1)] # Southwest
+                    adjacent += [(x + 1, y - 1)]  # Southwest
                 if x < self.boardWidth - 1:
-                    adjacent += [(x + 1, y + 1)] # Southeast
+                    adjacent += [(x + 1, y + 1)]  # Southeast
 
         return adjacent
 
@@ -1181,7 +1184,7 @@ class Application:
             if unit and unit.alive:
                 self.setStatusBar("You clicked on %s %s" % (panel, unit))
 
-                if panel == "red": # clicked player unit
+                if panel == "red":  # clicked player unit
                     self.clickedUnit = unit
                     self.placingUnit = True
 
@@ -1251,17 +1254,17 @@ class Application:
             self.drawSidePanels()
             self.setStatusBar("Randomly placed your army!")
             self.started = True
-            
-    def randomMove(self, event = None):
+
+    def randomMove(self, event=None):
         if not self.started: return
         tempBrain = randomBrain.Brain(self, self.redArmy, self.boardWidth)
         (oldlocation, move) = tempBrain.findMove()
         unit = self.getUnit(oldlocation[0], oldlocation[1])
-        
+
         self.movingUnit = True
         self.clickedUnit = unit
-        #self.drawUnit(self.map, unit, move[0], move[1], SELECTED_RED_PLAYER_COLOR)
-        
+        # self.drawUnit(self.map, unit, move[0], move[1], SELECTED_RED_PLAYER_COLOR)
+
         unit.hasMoved = True
 
         # Do move animation
@@ -1275,19 +1278,19 @@ class Application:
                 self.root.after(MOVE_ANIM_FRAMERATE,
                     self.map.move("u" + str(id(unit)), stepSize * dx, stepSize * dy))
                 self.root.update_idletasks()
-                
+
         enemy = self.getUnit(move[0], move[1])
         if enemy:
             self.attack(unit, enemy)
         else:
-            unit.setPosition(move[0], move[1])  
-            
+            unit.setPosition(move[0], move[1])
+
         self.clickedUnit = None
         self.movingUnit = False
         self.drawMap()
         self.drawMoveArrow(oldlocation, move)
         time.sleep(.5)
-        self.endTurn()      
+        self.endTurn()
 
     def exit(self, event=None):
         """Quit program."""
