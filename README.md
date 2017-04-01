@@ -10,12 +10,7 @@ This game is an open source implementation of the classical board game of Strate
 with some gameplay changes and additions, such as configurable board size and optional rules like diagonal movement. Other differences 
 from the traditional game, that might be added in the future, are fog of war (i.e. limited sight distance), new special units and multiplayer support.
 
-The current working title is _Kindral_, which is Estonian for 'general'.
-
-## News  
-For the latest developments, see the [SVN change log](http://code.google.com/p/gpfj/source/list).
-
-<u><font size=3>All players/testers are kindly invited to participate in the [user survey](http://www2.junuxx.net/kindral.php)!</font></u>
+_Kindral_ is the Estonian word for 'general'.
 
 ## Requirements  
 The easiest way to play Kindral is to download the latest [binary version](https://code.google.com/p/gpfj/downloads/list). 
