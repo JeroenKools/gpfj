@@ -22,7 +22,7 @@ from Tkinter import *  # @UnusedWildImport
 import tkMessageBox
 import tkFileDialog
 import tkFont
-import Image, ImageTk
+from PIL import Image, ImageTk
 
 # Modules that are part of the game
 from Army import Army, Icons
@@ -43,6 +43,8 @@ if sys.version_info[:2] == (2, 7):
 if not py26:
     from ttk import Combobox, Notebook
 
+canPlaySound=False
+canPlayMusic=False
 if platform == "Windows":
     import winsound
     canPlaySound = True
@@ -50,10 +52,7 @@ if platform == "Windows":
         import mp3play
         canPlayMusic = True
     except ImportError:
-        canPlayMusic = False
-else:
-    canPlaySound = False
-    canPlayMusic = False
+        pass
 
 def setIcon(window, icon):
     """Set the icon of a Tk root or toplevel window to a given .ico or .xbm file, 
@@ -1402,7 +1401,8 @@ class Launcher():
 
     def loadGame(self):
         """Load a game and close the launcher"""
-        self.clip.stop()
+        if canPlayMusic:
+            self.clip.stop()
         self.top.destroy()
         app = Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(),
                     self.sizeVar.get(), self.diagonalVar.get())

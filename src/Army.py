@@ -1,6 +1,6 @@
 from constants import *
 from Tkinter import PhotoImage
-import Image, ImageTk
+from PIL import Image, ImageTk
 
 class Army:
     ranks = ['marshal', 'general', 'colonel', 'major', 'captain',
