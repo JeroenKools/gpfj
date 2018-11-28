@@ -16,12 +16,12 @@ from random import randint, choice, random
 import platform as pf
 import pkgutil
 import time
+import pygame
 
 # Tkinter and PIL for GUI and graphics
 from Tkinter import *  # @UnusedWildImport
 import tkMessageBox
 import tkFileDialog
-import tkFont
 from PIL import Image, ImageTk
 
 # Modules that are part of the game
@@ -43,17 +43,6 @@ if sys.version_info[:2] == (2, 7):
 if not py26:
     from ttk import Combobox, Notebook
 
-canPlaySound=False
-canPlayMusic=False
-if platform == "Windows":
-    import winsound
-    canPlaySound = True
-    try:
-        import mp3play
-        canPlayMusic = True
-    except ImportError:
-        pass
-
 def setIcon(window, icon):
     """Set the icon of a Tk root or toplevel window to a given .ico or .xbm file, 
     depending on the operating system"""
@@ -66,6 +55,7 @@ def setIcon(window, icon):
 class Application:
     """Main game and UI class"""
     def __init__(self, root, brain="SmartBrain", difficulty="Normal", size="Normal", diagonal=False):
+    
         self.root = root
         self.blueBrain = eval(brain)
         self.redBrain = 0
@@ -80,6 +70,7 @@ class Application:
 
         self.unitIcons = Icons(self.tilePix)
 
+        
         # Create menu bar
         menuBar = Menu(root)
 
@@ -1239,9 +1230,11 @@ class Application:
 
     def playSound(self, name):
         """Play a sound, if on Windows and if sound is enabled"""
-        if canPlaySound and self.soundOn.get():
-            winsound.PlaySound("%s/%s" % (SOUND_DIR, name),
-                               winsound.SND_FILENAME | winsound.SND_ASYNC)
+        sound=pygame.mixer.Sound(os.path.join(SOUND_DIR, name))
+        sound.play()
+        time.sleep(sound.get_length())
+        print("Playing sound {}".format(os.path.join(SOUND_DIR, name)))
+
 
     def quickplace(self, event=None):
         """Let the computer place human player's pieces randomly"""
@@ -1391,8 +1384,7 @@ class Launcher():
 
     def startGame(self):
         """Start the main interface with the options chosen in the launcher, and close the launcher window"""
-        if canPlayMusic:
-            self.clip.stop()
+        pygame.mixer.music.stop()
         self.top.destroy()
         Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(),
                     self.sizeVar.get(), self.diagonalVar.get())
@@ -1401,8 +1393,7 @@ class Launcher():
 
     def loadGame(self):
         """Load a game and close the launcher"""
-        if canPlayMusic:
-            self.clip.stop()
+        pygame.mixer.music.stop()
         self.top.destroy()
         app = Application(self.root, self.blueBrainVar.get(), self.difficultyVar.get(),
                     self.sizeVar.get(), self.diagonalVar.get())
@@ -1424,12 +1415,11 @@ class Launcher():
 
     def playMusic(self):
         """Play songs from the music directory"""
-        if canPlayMusic:
-            tracks = [x for x in os.listdir(MUSIC_DIR) if "mp3" in x ]
-            track = choice(tracks)
-            self.clip = mp3play.load(os.path.join(MUSIC_DIR, track))
-            self.clip.play()
-            self.top.after(self.clip.milliseconds(), self.playMusic)
+        tracks = [x for x in os.listdir(MUSIC_DIR) if "mp3" in x ]
+        track = choice(tracks)
+        pygame.mixer.music.load(os.path.join(MUSIC_DIR, track))
+        pygame.mixer.music.play()
+        print("Playing music {}".format(os.path.join(MUSIC_DIR, track)))
 
     def addMenu(self, labeltext, var, options, default):
         """Add an OptionMenu (in Python 2.6's Tkinter) or a ttk Combobox (in Python 2.7)
@@ -1454,9 +1444,11 @@ class Launcher():
         self.root.quit()
 
 if __name__ == "__main__":
+    pygame.mixer.init(48000, -16, 1, 102400)
     root = Tk()
     root.withdraw()
     Launcher(root)
     root.title("%s %s" % (GAME_NAME, VERSION))
     setIcon(root, "flag")
-    root.mainloop()
+    root.mainloop() 
+    pygame.mixer.quit()
